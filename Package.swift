@@ -6,23 +6,19 @@ import PackageDescription
 let package = Package(
     name: "UnsafeWrapCSampler",
     products: [
-        // Products define the executables and libraries a package produces, and make them visible to other packages.
         .library(
-            name: "UnsafeWrapCSampler",
-            targets: ["UnsafeWrapCSampler"]),
-    ],
-    dependencies: [
-        // Dependencies declare other packages that this package depends on.
-        // .package(url: /* package url */, from: "1.0.0"),
+            name: "UWCSampler",
+            targets: ["UWCSamplerC", "UWCSampler"]),
     ],
     targets: [
-        // Targets are the basic building blocks of a package. A target can define a module or a test suite.
-        // Targets can depend on other targets in this package, and on products in packages this package depends on.
         .target(
-            name: "UnsafeWrapCSampler",
-            dependencies: []),
-        .testTarget(
-            name: "UnsafeWrapCSamplerTests",
-            dependencies: ["UnsafeWrapCSampler"]),
+            name: "UWCSamplerC",
+            path: "Sources/C"
+            ),
+        .target(
+            name: "UWCSampler",
+            dependencies: ["UWCSamplerC"],
+            path: "Sources/Swift"
+        )
     ]
 )

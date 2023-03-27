@@ -103,7 +103,60 @@ public struct RandomNumberSetProvider {
     }
     
     
+//    public func testBufferProcess() {
+//        call_buffer_process_test()
+//    }
     
+    
+    //tricky thing, if wanted to pass this directly to c func as a const void*  STILL must be a var, which causes problems
+    let base_buffer:[UInt8] = [ 0x33, 0x33, 0x33, 0x66, 0x66, 0x66, 0x99, 0x99, 0x99,
+        0xCC, 0xCC, 0xCC, 0xEE, 0xEE, 0xEE, 0xEE, 0x00, 0x00,
+        0x00, 0xEE, 0x00, 0x00, 0xEE, 0x00, 0x11, 0x11, 0x11 ]
+    
+
+    public func processBuffer(baseBuffer:[UInt8]? = nil) -> [UInt8] {
+        var m_base_buffer = baseBuffer ?? base_buffer
+        var settings:[CInt] = [300, 2883, 499832, 6]
+        var width = 3
+        var height = 3
+        let bytes_per_pixel = 3
+        
+        var outputBuffer:[UInt8] = Array(repeating: 0, count: width * height * bytes_per_pixel)
+        //Note: Reserving capacity is not good enough. Must be written to.
+        //outputBuffer.reserveCapacity(width * height * bytes_per_pixel)
+        
+        let size_result = UnsafeMutablePointer<Int>.allocate(capacity: 1)
+        size_result.initialize(to: 0)
+        
+       // buffer_process(T##settings: UnsafeMutablePointer<Int32>!##UnsafeMutablePointer<Int32>!, T##settings_count: u_int##u_int, T##width_ptr: UnsafePointer<Int>!##UnsafePointer<Int>!, T##height_ptr: UnsafePointer<Int>!##UnsafePointer<Int>!, T##bytes_per_pixel: Int##Int, T##calculated_size_ptr: UnsafeMutablePointer<Int>!##UnsafeMutablePointer<Int>!, T##input_buffer: UnsafeRawPointer!##UnsafeRawPointer!, T##output_buffer: UnsafeMutableRawPointer!##UnsafeMutableRawPointer!)
+    
+
+        buffer_process(&settings, CUnsignedInt(settings.count), &width, &height, bytes_per_pixel, size_result, &m_base_buffer, &outputBuffer)
+        
+        print(size_result.pointee)
+        print(outputBuffer)
+        
+        cPrintUInt8Array(outputBuffer)
+        
+        //fetchCArray()
+        
+        return outputBuffer
+    }
+    
+    func cPrintUInt8Array(_ array:[UInt8]) {
+        print("opaque:")
+        var for_pointer = array
+        print_opaque(&for_pointer, array.count)
+    }
+    
+//    public func fetchCArray<T>(expectedType:T.Type) -> [T] {
+//        let c_array_pointer = random_sampler_global_array.self;
+//        print("Pointer:", c_array_pointer, c_array_pointer.self)
+//    }
+    
+//    public func fetchCArray() {
+//        let bufferPointer = UnsafeRawBufferPointer(random_sampler_global_array)
+//    }
     
     
 }

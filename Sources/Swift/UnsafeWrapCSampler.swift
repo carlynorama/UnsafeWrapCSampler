@@ -5,10 +5,3 @@ public struct UWCSampler {
     }
 }
 
-//
-//func arrayUnsafeInitFromPointer<Element>(pointer:UnsafePointer<Element>, count:Int, type:Element.Type) -> [Element] {
-//    var array:[Element] = []
-//    array.reserveCapacity(count)
-//    
-//    
-//}

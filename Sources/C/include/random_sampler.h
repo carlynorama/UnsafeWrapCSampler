@@ -11,7 +11,8 @@
 #include <stdio.h>
 
 
-uint8_t random_sampler_global_array[36];
+uint8_t random_sampler_global_array[27];
+uint32_t random_sampler_RGBA[9];
 
 void seed_random(unsigned int seed);
 
@@ -35,5 +36,17 @@ int buffer_process(int* settings,
                    void* output_buffer
                    );
 
+
+void print_message(const char* message);
+
+void build_message(char* result);
+void build_concise_message(char* result, size_t* length);
+
+void set_all_bits_high(void* test, size_t count, size_t type_size);
+
+void acknowledge_buffer(int* array, size_t n);
+
+void erased_tuple_receiver(const int* values, size_t count);
+void erased_struct_member_receiver(const int* value_ptr);
 
 #endif /* random_sampler_h */

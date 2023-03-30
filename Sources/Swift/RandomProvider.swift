@@ -1,17 +1,19 @@
 //
-//  File.swift
+//  RandomProvider.swift
 //  
 //
-//  Created by Labtanza on 3/25/23.
+//  Created by Carlyn Maw on 3/25/23.
 //
 
 import Foundation
 import UWCSamplerC
-//https://docs.swift.org/swift-book/documentation/the-swift-programming-language/generics/
 
+
+//Note: functions that casting to Int on exit could be avoided if the C functions used `size_t` instead of `int` (which is Int32).
+//Using int in these example to show use cases.
 
 @available(macOS 12, *)
-public struct RandomNumberSetProvider {
+public struct RandomProvider {
     public init(seed:CUnsignedLong? = nil) {
         //make a call to srand?
         if seed != nil {
@@ -23,39 +25,47 @@ public struct RandomNumberSetProvider {
         }
     }
     
-    public func getRandomInt() -> Int {
-        //int* p = malloc(capacity * sizeof(int));
+    //MARK: Single Values
+    
+    public func getRandomIntExplicitPointer() -> Int {
+        //equivalent to: int* p = malloc(capacity * sizeof(int));
         let ptr = UnsafeMutablePointer<CInt>.allocate(capacity: 1)
         
-        //if setting the value in Swift
-        //*ptr = 42;
-        //ptr.initialize(to: 42)
+        //Pass to C function
+        random_int_with_result_pointer(ptr);
         
-        random_int_pointer(ptr);
+        // Set holding variable on the stack
         // ptr.pointee == *ptr
         let tmp = Int(ptr.pointee);
         
+        //Release the memory
         //free(p);
         ptr.deallocate()
+        
+        //return the holding variable.
         return tmp
     }
     
-    public func getRandomIntSafer() -> Int {
+    public func getRandomIntClosure() -> Int {
         var tmp:CInt = 0;
         withUnsafeMutablePointer(to: &tmp) { intPtr in
-            random_int_pointer(intPtr)
+            random_int_with_result_pointer(intPtr)
         }
         return Int(tmp)
     }
     
-    public func addRandom(to baseInt:Int) -> Int {
-        withUnsafePointer(to: baseInt) { (ptr) -> Int in
-            ptr.pointee + 5;
+    //Using a CInt means don't have to have a tmp var
+    public func addRandom(to baseInt:CInt, cappingAt:CInt = CInt.max) -> CInt {
+        withUnsafePointer(to: baseInt) { (min_ptr) -> CInt in
+            withUnsafePointer(to: cappingAt) { (max_ptr) -> CInt in
+                return random_number_in_range(min_ptr, max_ptr);
+            }
         }
     }
     
-    public func makeArrayOfRandomInt(count:Int) -> [Int] {
-
+    //MARK: Arrays of Values
+    
+    public func makeArrayOfRandomIntExplicitPointer(count:Int) -> [Int] {
         let start = UnsafeMutablePointer<CInt>.allocate(capacity: count)
 
         random_array_of_zero_to_one_hundred(start, count)
@@ -71,21 +81,25 @@ public struct RandomNumberSetProvider {
         return tmp.map { Int($0) }
     }
     
-    public func makeArrayOfRandomIntCleaner(count:Int) -> [CInt] {
-        //Count for this initializer is really MAX count possible.
+    public func makeArrayOfRandomIntClosure(count:Int) -> [Int] {
+        //Count for this initializer is really MAX count possible, function may return an array with fewer items defined.
         //both buffer and initializedCount are inout
-      Array<CInt>(unsafeUninitializedCapacity: count) { buffer, initializedCount in
+      let tmp = Array<CInt>(unsafeUninitializedCapacity: count) { buffer, initializedCount in
           random_array_of_zero_to_one_hundred(buffer.baseAddress, count)
           initializedCount = count // if initializedCount is not set, Swift assumes 0, and the array returned is empty.
         }
+        return tmp.map { Int($0) }
     }
     
-    public func randomValueInRange(min base:UInt, max:UInt, count:Int) -> [Int] {
-        let upTo = max - base
+    //Explicit buffer pointer management
+    public func makeArrayOfRandomInRange(min base:CInt, max:CInt, count:Int) -> [Int] {
+        let max_delta = max - base
         let start = UnsafeMutablePointer<CInt>.allocate(capacity: count)
         start.initialize(repeating: CInt(base), count: count)
+        
 
-        add_random_value_up_to(start, count, CInt(upTo))
+        //void add_random_to_all_with_max_on_random(int* array, const size_t n, const int max);
+        add_random_to_all_with_max_on_random(start, count, max_delta)
         
         let outPut = UnsafeBufferPointer<CInt>(start: start, count: count)
         let tmp = [CInt](outPut)
@@ -97,31 +111,31 @@ public struct RandomNumberSetProvider {
         
         return tmp.map { Int($0) }
         
-        
-        //NOTE: This also works.
+        //NOTE: This also works in case starting from an UnsafeBufferPointer
 //        guard let base_ptr = UnsafeMutablePointer(mutating: outPut.baseAddress)  else {
 //            fatalError("randomValueInRange: no mutable base pointer available")
 //        }
-//        add_random_value_up_to(base_ptr, count, CInt(upTo))
+//        add_random_value_up_to(base_ptr, count, upTo)
         
     }
     
     //MUCH Cleaner than randomValueInRange, closure style call handles allocate & deallocate
-    public func addRandomTo(_ baseArray:[CInt], upTo:CInt) -> [CInt] {
+    public func addRandomTo(_ baseArray:[CInt], randomValueUpTo randomMax:CInt) -> [CInt] {
         var arrayCopy = baseArray
         arrayCopy.withUnsafeMutableBufferPointer { bufferPointer in
             //Note: bufferPointer.count == arrayCopy.count
-            add_random_value_up_to(bufferPointer.baseAddress, bufferPointer.count, CInt(upTo))
+            add_random_to_all_with_max_on_random(bufferPointer.baseAddress, bufferPointer.count, randomMax)
         }
         return arrayCopy
     }
     
 
+    //MARK: Complex Call Example (processBuffer)
     
     
-//    public func testBufferProcess() {
-//        call_buffer_process_test()
-//    }
+    public func testBufferProcess() {
+        call_buffer_process_test()
+    }
     
     
     //tricky thing, if wanted to pass this directly to c func as a const void*  STILL must be a var, which causes problems
@@ -157,27 +171,45 @@ public struct RandomNumberSetProvider {
         return outputBuffer
     }
     
-    func cPrintUInt8Array(_ array:[UInt8]) {
-        print("opaque:")
-        var for_pointer = array
-        print_opaque(&for_pointer, array.count)
-    }
+    //MARK: Strings and Printing
     
-    public func cPrintMessage(message:String) {
-        //see also result =  message.withCSString { (str) -> SomeType  in ...}
-        print_message(message)
-    }
-    
-    public func asMessage() -> String {
+    public func getAnswer() -> String {
         //fill with 0 (NULL) and C string functions will consider it empty.
-        //2048 in this case reps the maximum size expect to get back.
-        var dataBuffer = Array<Int8>(repeating: 0, count: 2048)
-        build_message(&dataBuffer)
+        //512 in this case reps the maximum size expect to get back.
+        var dataBuffer = Array<Int8>(repeating: 0, count: 512)
+        answer_to_life(&dataBuffer)
         return String(cString: dataBuffer)
     }
     
+    //void random_scramble(const char* input, char* output, size_t* length)
+    public func scrambleMessage(message:String) -> String {
+        var length = 0
+        //trying to pass &message to function doesn't work. & requires a var.
+        return withUnsafePointer(to:message) { (message_ptr) -> String in
+            random_scramble(message_ptr, nil, &length)
+            return String(unsafeUninitializedCapacity: length) { buffer in
+                random_scramble(message_ptr, buffer.baseAddress, &length)
+                print(String(cString: buffer.baseAddress!))
+                precondition(buffer[length-1]==0)
+                return buffer.count - 1
+            }
+        }
+    }
+    
+    func cPrintUInt8Array(_ array:[UInt8]) {
+        print("opaque:")
+        var for_pointer = array //withUnsafeBufferPointer does not work in this case of passing to void*
+        print_opaque(&for_pointer, array.count)
+    }
+    
+    func cPrintMessage(message:String) {
+        //see also result =  message.withCSString { (str) -> SomeType  in ...}
+        print_message(message)
+    }
+
+    
     //when keeping the allocation small is more important than the double call
-    public func getString() -> String {
+    func getString() -> String {
         var length = 0
         build_concise_message(nil, &length)
         return String(unsafeUninitializedCapacity: length) { buffer in
@@ -188,21 +220,46 @@ public struct RandomNumberSetProvider {
         }
     }
     
-    public func bufferSetToHigh<R:Numeric>(count:Int, ofType:R.Type) -> [R] {
+    //MARK: Misc Array Handling
+    
+    public func bufferSetHigh<R:Numeric>(count:Int, ofType:R.Type) -> [R] {
         var dataBuffer = Array<R>(repeating: 0, count: count)
         set_all_bits_high(&dataBuffer, count, MemoryLayout<R>.size)
         return dataBuffer
     }
     
-    //What happens if not a numeric type???
-    func makeBuffer<R>(count:Int, ofType:R.Type) -> [R] {
-        Array<R>(unsafeUninitializedCapacity: count) { buffer, initializedCount in
-            set_all_bits_high(&buffer, count, MemoryLayout<R>.size)
-            initializedCount = count
-        }
+    public func bufferSetLow<R:Numeric>(count:Int, ofType:R.Type) -> [R] {
+        var dataBuffer = Array<R>(repeating: 0, count: count)
+        set_all_bits_low(&dataBuffer, count, MemoryLayout<R>.size)
+        return dataBuffer
     }
     
-
+    public func bufferSetToRandomBytes<R:Numeric>(count:Int, ofType:R.Type) -> [R] {
+        var dataBuffer = Array<R>(repeating: 0, count: count)
+        set_all_bits_random(&dataBuffer, count, MemoryLayout<R>.size)
+        return dataBuffer
+    }
+    
+    //MARK: COLOR
+    
+    public func makeRandomColorBuffer(count:Int) -> [UInt32] {
+        var dataBuffer = Array<UInt32>(repeating: 0, count: count)
+        random_colors_full_alpha(&dataBuffer, count);
+        return dataBuffer
+    }
+    
+    
+    
+//    //What happens if not a numeric type???
+//    func makeBuffer<R>(count:Int, ofType:R.Type) -> [R] {
+//        Array<R>(unsafeUninitializedCapacity: count) { buffer, initializedCount in
+//            set_all_bits_high(&buffer, count, MemoryLayout<R>.size)
+//            initializedCount = count
+//        }
+//    }
+    
+    
+    //MARK: Retrieving Fixed Size Arrays of Known Types
     
     public func fetchBaseBuffer() -> [UInt8] {
         //"let array = random_sampler_global_array" Returns tuple size of fixed size array.

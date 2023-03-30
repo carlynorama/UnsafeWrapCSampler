@@ -248,6 +248,16 @@ public struct RandomProvider {
         return dataBuffer
     }
     
+    public func printColorInfo(colorInt:UInt32) {
+        print_color_components(colorInt)
+    }
+    
+    public func printColorBuffer(_ buffer:[UInt32]) {
+        for item in buffer {
+            print(String(format: "0x%08x", item))
+        }
+    }
+    
     
     
 //    //What happens if not a numeric type???
@@ -278,7 +288,7 @@ public struct RandomProvider {
     }
     
 
-
+    //MARK: Misc Functions from Videos
     
     func readUInt32(from data:Data, at offset:Int) -> UInt32 {
         data.withUnsafeBytes { (buffer: UnsafeRawBufferPointer) in

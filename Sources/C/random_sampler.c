@@ -22,9 +22,12 @@
 //MARK: typedefs
 //-------------------------------------------------------------------
 
-//Little endian layout for colors definable with hex layout #RRGGBBAA
+//This union is a little endian layout for colors definable with hex layout #RRGGBBAA
+//This is NOT compliant with OpenGL and PNG formats RGBA32 as that assumes big endian,
+//i.e. they expect RED to be at byte[0], not byte[4]. Little Endian systems should implement
+//#AABBGGRR, but that is the opposite of how I'm used to writing hex colors, so yeah not gunna for this.
 union c_color {
-  uint32_t c;
+  uint32_t full;
   uint8_t bytes[4];
   struct {
     uint8_t alpha;
@@ -71,8 +74,6 @@ void seed_random(const unsigned int seed) {
 //-------------------------------------------------------------------
 //MARK: Single Value
 //-------------------------------------------------------------------
-
-
 
 int random_int() {
     return rand();
@@ -190,28 +191,65 @@ void set_all_bits_random(void* array, const size_t n, const size_t type_size) {
     }
 }
 
+
+//-------------------------------------------------------------------
+//MARK: Color Functions
+//-------------------------------------------------------------------
+
+
 uint32_t build_color(uint8_t red, uint8_t green, uint8_t blue, uint8_t alpha) {
     union c_color my_color;
-    my_color.bytes[0] = alpha;
-    my_color.bytes[1] = blue;
-    my_color.bytes[2] = green;
-    my_color.bytes[3] = red;
-    return my_color.c;
+    my_color.components.alpha = alpha;
+    my_color.components.blue = blue;
+    my_color.components.green = green;
+    my_color.components.red = red;
+    return my_color.full;
 }
 
 uint32_t random_color_full_alpha() {
     union c_color my_color;
-    my_color.bytes[0] = 255;
-    my_color.bytes[1] = rand() % 255;
-    my_color.bytes[2] = rand() % 255;
-    my_color.bytes[3] = rand() % 255;
-    return my_color.c;
+    my_color.components.alpha = 255;
+    my_color.components.blue = rand() % 255;
+    my_color.components.green = rand() % 255;
+    my_color.components.red = rand() % 255;
+    //printf("color made: 0x%08x\n", my_color.full);
+    return my_color.full;
 }
 
 void random_colors_full_alpha(uint32_t* array, const size_t n) {
     for (size_t item = 0; item < n; item ++) {
         array[item] = random_color_full_alpha();
+        //printf("color recieved: 0x%08x\n", array[item]);
     }
+    acknowledge_uint32_buffer(array, n);
+}
+
+void print_color_info(const uint32_t color_val) {
+    union c_color my_color;
+    my_color.full = color_val;
+    printf("hex: #%08x", my_color.full);
+    printf("\nbytes:\t");
+    for (size_t i=0; i < 4; i++) {
+        printf("index: %lu, value:%d\t", i, my_color.bytes[i]);
+    }
+    printf("\ncomponents:\t r%03d, g%03d b%03d a%03d",
+           my_color.components.red,
+           my_color.components.green,
+           my_color.components.blue,
+           my_color.components.alpha);
+    printf("\n");
+}
+
+void print_color_components(const uint32_t color_val) {
+    union c_color my_color;
+    my_color.full = color_val;
+    printf("hex: #%08x\n", my_color.full);
+    printf("\ncomponents:\t r%03d, g%03d b%03d a%03d",
+           my_color.components.red,
+           my_color.components.green,
+           my_color.components.blue,
+           my_color.components.alpha);
+    printf("\n");
 }
 
 
@@ -377,6 +415,13 @@ void acknowledge_uint_buffer(const size_t* array, const size_t n) {
     }
 }
 
+void acknowledge_uint32_buffer(const uint32_t* array, const size_t n) {
+    printf("pointer: %p\n", array);
+    for (size_t i = 0; i < n; i++) {
+        printf("value %zu: 0x%08x\n", i, array[i]);
+    }
+}
+
 void acknowledge_char_buffer(const char* array, const size_t n) {
     printf("pointer: %p\n", array);
     for (size_t i = 0; i < n; i++) {
@@ -384,21 +429,7 @@ void acknowledge_char_buffer(const char* array, const size_t n) {
     }
 }
 
-void print_color_info(uint32_t color_val) {
-    union c_color my_color;
-    my_color.c = color_val;
-    printf("hex: #%08x", my_color.c);
-    printf("\nbytes:\t");
-    for (size_t i=0; i < 4; i++) {
-        printf("index: %lu, value:%d\t", i, my_color.bytes[i]);
-    }
-    printf("\ncomponents:\t r%03d, g%03d b%03d a%03d",
-           my_color.components.red,
-           my_color.components.green,
-           my_color.components.blue,
-           my_color.components.alpha);
-    printf("\n");
-}
+
 
 //-------------------------------------------------------------------
 //MARK: For Raw Pointer Tests

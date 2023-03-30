@@ -36,10 +36,12 @@ void add_random_to_all_capped(unsigned int* array, const size_t n, const int cap
 void set_all_bits_high(void* array, const size_t n, const size_t type_size);
 void set_all_bits_low(void* array, const size_t n, const size_t type_size);
 void set_all_bits_random(void* array, const size_t n, const size_t type_size);
+
 void random_colors_full_alpha(uint32_t* array, const size_t n);
 uint32_t random_color_and_alpha();
 uint32_t random_color_full_alpha();
-
+void print_color_info(const uint32_t color_val);
+void print_color_components(const uint32_t color_val);
 
 void call_buffer_process_test();
 int buffer_process(int* settings,
@@ -62,6 +64,7 @@ void random_scramble(const char* input, char* output, size_t* length);
 
 void print_opaque(const void* p, const size_t byte_count);
 void acknowledge_buffer(int* array, const size_t n);
+void acknowledge_uint32_buffer(const uint32_t* array, const size_t n);
 
 void erased_tuple_receiver(const int* values, const size_t n);
 void erased_struct_member_receiver(const int* value_ptr);

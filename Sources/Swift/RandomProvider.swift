@@ -272,12 +272,12 @@ public struct RandomProvider {
     //MARK: Retrieving Fixed Size Arrays of Known Types
     
     public func fetchBaseBuffer() -> [UInt8] {
-        //"let array = random_sampler_global_array" Returns tuple size of fixed size array.
-        fetchFixedSizeCArray(source: random_sampler_global_array, boundToType: UInt8.self)
+        //"let array = random_provider_global_array" Returns tuple size of fixed size array.
+        fetchFixedSizeCArray(source: random_provider_global_array, boundToType: UInt8.self)
     }
     
     public func fetchBaseBufferRGBA() -> [UInt32] {
-        fetchFixedSizeCArray(source: random_sampler_RGBA, boundToType: UInt32.self)
+        fetchFixedSizeCArray(source: random_provider_RGBA, boundToType: UInt32.self)
     }
     
     func fetchFixedSizeCArray<T, R>(source:T, boundToType:R.Type) -> [R] {

@@ -191,7 +191,7 @@ void set_all_bits_random(void* array, const size_t n, const size_t type_size) {
 }
 
 uint32_t build_color(uint8_t red, uint8_t green, uint8_t blue, uint8_t alpha) {
-    union color my_color;
+    union c_color my_color;
     my_color.bytes[0] = alpha;
     my_color.bytes[1] = blue;
     my_color.bytes[2] = green;
@@ -200,7 +200,7 @@ uint32_t build_color(uint8_t red, uint8_t green, uint8_t blue, uint8_t alpha) {
 }
 
 uint32_t random_color_full_alpha() {
-    union color my_color;
+    union c_color my_color;
     my_color.bytes[0] = 255;
     my_color.bytes[1] = rand() % 255;
     my_color.bytes[2] = rand() % 255;
@@ -350,10 +350,6 @@ void random_scramble(const char* input, char* output, size_t* length) {
 }
 
 
-
-
-
-
 //-------------------------------------------------------------------
 //MARK: Printing Functions
 //-------------------------------------------------------------------
@@ -389,14 +385,18 @@ void acknowledge_char_buffer(const char* array, const size_t n) {
 }
 
 void print_color_info(uint32_t color_val) {
-    union color my_color;
+    union c_color my_color;
     my_color.c = color_val;
     printf("hex: #%08x", my_color.c);
     printf("\nbytes:\t");
     for (size_t i=0; i < 4; i++) {
         printf("index: %lu, value:%d\t", i, my_color.bytes[i]);
     }
-    printf("\ncomponents:\t r%03d, g%03d b%03d a%03d", my_color.components.red, my_color.components.green, my_color.components.blue, my_color.components.alpha);
+    printf("\ncomponents:\t r%03d, g%03d b%03d a%03d",
+           my_color.components.red,
+           my_color.components.green,
+           my_color.components.blue,
+           my_color.components.alpha);
     printf("\n");
 }
 

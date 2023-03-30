@@ -22,26 +22,20 @@
 //MARK: typedefs
 //-------------------------------------------------------------------
 
-//This union is a little endian layout for colors definable with hex layout #RRGGBBAA
-//This is NOT compliant with OpenGL and PNG formats RGBA32 as that assumes big endian,
-//i.e. they expect RED to be at byte[0], not byte[4]. Little Endian systems should implement
-//#AABBGGRR, but that is the opposite of how I'm used to writing hex colors, so yeah not gunna for this.
-union c_color {
-  uint32_t full;
-  uint8_t bytes[4];
-  struct {
+//Note: it appears that unions need to be IN THE HEADER to be defined. Using Opaque types do not work correctly?
+
+struct td_color_test {
     uint8_t alpha;
     uint8_t blue;
     uint8_t green;
     uint8_t red;
-  } components;
 };
 
 //-------------------------------------------------------------------
 //MARK: Constants
 //-------------------------------------------------------------------
 
-uint8_t random_provider_global_array[27] = { 0x33, 0x33, 0x33, 0x66, 0x66, 0x66, 0x99, 0x99, 0x99,
+uint8_t random_provider_uint8_array[27] = { 0x33, 0x33, 0x33, 0x66, 0x66, 0x66, 0x99, 0x99, 0x99,
                                              0xCC, 0xCC, 0xCC, 0xEE, 0xEE, 0xEE, 0xEE, 0x00, 0x00,
                                              0x00, 0xEE, 0x00, 0x00, 0xEE, 0x00, 0x11, 0x11, 0x11
                                           };
@@ -49,10 +43,12 @@ size_t width = 3;
 size_t height = 3;
 size_t bytes_per_pixel = 3;
 
-uint32_t random_provider_RGBA[9] = { 0x333333FF, 0x666666FF, 0x999999FF,
+uint32_t random_provider_RGBA_array[9] = { 0x333333FF, 0x666666FF, 0x999999FF,
                                     0xCCCCCCFF, 0xEEEEEEFF, 0xEE0000FF,
                                     0x00EE00FF, 0x00EE00FF, 0x111111FF
                                 };
+
+
 
 const unsigned char valid_alpha[52] = { 0b01000001, 0b01000010, 0b01000011, 0b01000100, 0b01000101, 0b01000110, 0b01000111,
                                         0b01001000, 0b01001001, 0b01001010, 0b01001011, 0b01001100, 0b01001101, 0b01001110,
@@ -143,7 +139,7 @@ void add_random_to_all_with_max_on_random(int* array, const size_t n, const int 
 
 //assumes you know that cap is already greater than all values in the array.
 //array has to be unsigned to calculate cap correctly.
-void add_random_to_all_capped(unsigned int* array, const size_t n, const int cap) {
+void add_random_to_all_capped(unsigned int* array, const size_t n, const unsigned int cap) {
     for (size_t i = 0; i < n; i++)
     {
         //printf("cfunc before: %d\t", array[i]);
@@ -188,161 +184,6 @@ void set_all_bits_random(void* array, const size_t n, const size_t type_size) {
 //    }
     for (size_t byte = 0; byte < type_size * n; byte++) {
         cast[byte] = rand() % 255;
-    }
-}
-
-
-//-------------------------------------------------------------------
-//MARK: Color Functions
-//-------------------------------------------------------------------
-
-
-uint32_t build_color(uint8_t red, uint8_t green, uint8_t blue, uint8_t alpha) {
-    union c_color my_color;
-    my_color.components.alpha = alpha;
-    my_color.components.blue = blue;
-    my_color.components.green = green;
-    my_color.components.red = red;
-    return my_color.full;
-}
-
-uint32_t random_color_full_alpha() {
-    union c_color my_color;
-    my_color.components.alpha = 255;
-    my_color.components.blue = rand() % 255;
-    my_color.components.green = rand() % 255;
-    my_color.components.red = rand() % 255;
-    //printf("color made: 0x%08x\n", my_color.full);
-    return my_color.full;
-}
-
-void random_colors_full_alpha(uint32_t* array, const size_t n) {
-    for (size_t item = 0; item < n; item ++) {
-        array[item] = random_color_full_alpha();
-        //printf("color recieved: 0x%08x\n", array[item]);
-    }
-    acknowledge_uint32_buffer(array, n);
-}
-
-void print_color_info(const uint32_t color_val) {
-    union c_color my_color;
-    my_color.full = color_val;
-    printf("hex: #%08x", my_color.full);
-    printf("\nbytes:\t");
-    for (size_t i=0; i < 4; i++) {
-        printf("index: %lu, value:%d\t", i, my_color.bytes[i]);
-    }
-    printf("\ncomponents:\t r%03d, g%03d b%03d a%03d",
-           my_color.components.red,
-           my_color.components.green,
-           my_color.components.blue,
-           my_color.components.alpha);
-    printf("\n");
-}
-
-void print_color_components(const uint32_t color_val) {
-    union c_color my_color;
-    my_color.full = color_val;
-    printf("hex: #%08x\n", my_color.full);
-    printf("\ncomponents:\t r%03d, g%03d b%03d a%03d",
-           my_color.components.red,
-           my_color.components.green,
-           my_color.components.blue,
-           my_color.components.alpha);
-    printf("\n");
-}
-
-
-
-//void random_colors_full_alpha(uint32_t* array, const size_t n) {
-//    uint8_t* cast = ((unsigned char *) array);
-//    //Finer grain control for reference.
-//    for (size_t item = 0; item < n; item ++) {
-//        for (size_t byte = 0; byte < 3; byte++) {
-//            cast[byte + item*3] = rand() % 255;
-//        }
-//        cast[3] = 255;
-//    }
-//}
-
-//uint32_t random_color_full_alpha() {
-//    uint32_t color = 0;
-//    for (size_t byte = 0; byte < 3; byte++) {
-//        ((unsigned char *) &color)[byte] = rand() % 255;
-//    }
-//    ((unsigned char *) &color)[3] = 255;
-//    return color;
-//}
-
-//uint32_t masked_random(uint32_t one_bits_to_zero, uint32_t one_bits_to_one) {
-//    uint32_t base = 0;
-//    set_all_bits_random((unsigned char *) &base, 1, 4);
-//    base = base | one_bits_to_one;
-//    base = base & ~one_bits_to_zero;
-//    return base;
-//}
-
-
-
-//-------------------------------------------------------------------
-//MARK: Buffer Process Example
-//-------------------------------------------------------------------
-
-// Meant to mimic the example in WWDC 2020 Unsafe Swift talk.
-
-void call_buffer_process_test() {
-    int* settings = malloc(3 * sizeof(int));
-    settings[0] = 8;
-    settings[1] = 12;
-    settings[2] = 240877;
-    size_t size_result = 0;
-    char* output_buffer = malloc(9 * bytes_per_pixel);
-    printf("allocated size: %lu\n", 9 * bytes_per_pixel);
-    int result = buffer_process(settings,
-                                3,
-                                &width,
-                                &height,
-                                bytes_per_pixel,
-                                &size_result,
-                                random_provider_global_array,
-                                output_buffer
-                                );
-    
-    printf("\ncalculated size: %zu", size_result);
-    free(settings);
-    free(output_buffer);
-}
-
-
-//trying to model sysctl example from video a bit more usefully.
-int buffer_process(int* settings,
-                   u_int settings_count,
-                   const size_t* width_ptr,
-                   const size_t* height_ptr,
-                   size_t bytes_per_pixel,
-                   size_t* calculated_size_ptr,
-                   const void* input_buffer,
-                   void* output_buffer
-                   ) {
-    
-    for (size_t i = 0; i < settings_count; i ++) {
-        printf("fake update setting no: %d\n", settings[i]);
-    }
-    
-    *calculated_size_ptr = *width_ptr * *height_ptr * bytes_per_pixel;
-    
-    printf("\nINPUT\n");
-    //print_opaque(input_buffer, *calculated_size_ptr);
-    for (int p = 0; p < *calculated_size_ptr; p++) {
-        printf("i:%d, v:%02x\t", p, ((unsigned char*)input_buffer)[p]);
-        if ((p+1) % ((*width_ptr * bytes_per_pixel)) == 0) { printf("\n"); }
-        //((char*)output_buffer)[p] = ((unsigned char*)input_buffer)[p] + 2;
-        ((unsigned char*)output_buffer)[p] = char_whiffle(((unsigned char*)input_buffer)[p], 20);
-    }
-    printf("\nOUTPUT\n");
-    for (int p = 0; p < *calculated_size_ptr; p++) {
-        printf("i:%d, v:%02x\t", p, ((unsigned char*)output_buffer)[p]);
-        if ((p+1) % ((*width_ptr * bytes_per_pixel)) == 0) { printf("\n"); }
     }
 }
 
@@ -415,6 +256,13 @@ void acknowledge_uint_buffer(const size_t* array, const size_t n) {
     }
 }
 
+void acknowledge_uint8_buffer(const uint8_t* array, const size_t n) {
+    printf("pointer: %p\n", array);
+    for (size_t i = 0; i < n; i++) {
+        printf("value %zu: %hhu\n", i, array[i]);
+    }
+}
+
 void acknowledge_uint32_buffer(const uint32_t* array, const size_t n) {
     printf("pointer: %p\n", array);
     for (size_t i = 0; i < n; i++) {
@@ -444,4 +292,158 @@ void erased_tuple_receiver(const int* values, const size_t n) {
         printf("%d\t", values[i]);
     }
     printf("\n");
+}
+
+
+//-------------------------------------------------------------------
+//MARK: Color Functions
+//-------------------------------------------------------------------
+
+
+uint32_t build_color(uint8_t red, uint8_t green, uint8_t blue, uint8_t alpha) {
+    union CColorRGBA my_color;
+    my_color.alpha = alpha;
+    my_color.blue = blue;
+    my_color.green = green;
+    my_color.red = red;
+    return my_color.full;
+}
+
+uint32_t random_color_full_alpha() {
+    union CColorRGBA my_color;
+    my_color.alpha = 255;
+    my_color.blue = rand() % 255;
+    my_color.green = rand() % 255;
+    my_color.red = rand() % 255;
+    //printf("color made: 0x%08x\n", my_color.full);
+    return my_color.full;
+}
+
+void random_colors_full_alpha(uint32_t* array, const size_t n) {
+    for (size_t item = 0; item < n; item ++) {
+        array[item] = random_color_full_alpha();
+        //printf("color received: 0x%08x\n", array[item]);
+    }
+    acknowledge_uint32_buffer(array, n);
+}
+
+void print_color_info(const uint32_t color_val) {
+    union CColorRGBA my_color;
+    my_color.full = color_val;
+    printf("hex: #%08x", my_color.full);
+    printf("\nbytes:\t");
+    for (size_t i=0; i < 4; i++) {
+        printf("index: %lu, value:%d\t", i, my_color.bytes[i]);
+    }
+    printf("\ncomponents:\t r%03d, g%03d b%03d a%03d",
+           my_color.red,
+           my_color.green,
+           my_color.blue,
+           my_color.alpha);
+    printf("\n");
+}
+
+void print_color_components(const uint32_t color_val) {
+    union CColorRGBA my_color;
+    my_color.full = color_val;
+    printf("hex: #%08x\n", my_color.full);
+    printf("\ncomponents:\t r%03d, g%03d b%03d a%03d",
+           my_color.red,
+           my_color.green,
+           my_color.blue,
+           my_color.alpha);
+    printf("\n");
+}
+
+
+
+//void random_colors_full_alpha(uint32_t* array, const size_t n) {
+//    uint8_t* cast = ((unsigned char *) array);
+//    //Finer grain control for reference.
+//    for (size_t item = 0; item < n; item ++) {
+//        for (size_t byte = 0; byte < 3; byte++) {
+//            cast[byte + item*3] = rand() % 255;
+//        }
+//        cast[3] = 255;
+//    }
+//}
+
+//uint32_t random_color_full_alpha() {
+//    uint32_t color = 0;
+//    for (size_t byte = 0; byte < 3; byte++) {
+//        ((unsigned char *) &color)[byte] = rand() % 255;
+//    }
+//    ((unsigned char *) &color)[3] = 255;
+//    return color;
+//}
+
+//uint32_t masked_random(uint32_t one_bits_to_zero, uint32_t one_bits_to_one) {
+//    uint32_t base = 0;
+//    set_all_bits_random((unsigned char *) &base, 1, 4);
+//    base = base | one_bits_to_one;
+//    base = base & ~one_bits_to_zero;
+//    return base;
+//}
+
+
+
+//-------------------------------------------------------------------
+//MARK: Buffer Process Example
+//-------------------------------------------------------------------
+
+// Meant to mimic the example in WWDC 2020 Unsafe Swift talk.
+
+//trying to model sysctl example from video a bit more usefully.
+int fuzz_buffer(int* settings,
+                   u_int settings_count,
+                   const size_t* width_ptr,
+                   const size_t* height_ptr,
+                   size_t bytes_per_pixel,
+                   size_t* calculated_size_ptr,
+                   const void* input_buffer,
+                   void* output_buffer
+                   ) {
+    
+    for (size_t i = 0; i < settings_count; i ++) {
+        printf("fake update setting no: %d\n", settings[i]);
+    }
+    
+    *calculated_size_ptr = *width_ptr * *height_ptr * bytes_per_pixel;
+    
+    printf("\nINPUT\n");
+    //print_opaque(input_buffer, *calculated_size_ptr);
+    for (int p = 0; p < *calculated_size_ptr; p++) {
+        printf("i:%d, v:%02x\t", p, ((unsigned char*)input_buffer)[p]);
+        if ((p+1) % ((*width_ptr * bytes_per_pixel)) == 0) { printf("\n"); }
+        //((char*)output_buffer)[p] = ((unsigned char*)input_buffer)[p] + 2;
+        ((unsigned char*)output_buffer)[p] = char_whiffle(((unsigned char*)input_buffer)[p], 20);
+    }
+    printf("\nOUTPUT\n");
+    for (int p = 0; p < *calculated_size_ptr; p++) {
+        printf("i:%d, v:%02x\t", p, ((unsigned char*)output_buffer)[p]);
+        if ((p+1) % ((*width_ptr * bytes_per_pixel)) == 0) { printf("\n"); }
+    }
+}
+
+void call_buffer_process_test() {
+    int* settings = malloc(3 * sizeof(int));
+    settings[0] = 8;
+    settings[1] = 12;
+    settings[2] = 240877;
+    size_t size_result = 0;
+    char* output_buffer = malloc(9 * bytes_per_pixel);
+    printf("allocated size: %lu\n", 9 * bytes_per_pixel);
+    int result = fuzz_buffer(settings,
+                                3,
+                                &width,
+                                &height,
+                                bytes_per_pixel,
+                                &size_result,
+                                random_provider_uint8_array,
+                                output_buffer
+                                );
+    
+    printf("\ncalculated size: %zu", size_result);
+    free(settings);
+    free(output_buffer);
 }

@@ -10,6 +10,7 @@ The basis of the package is a C library for working with random numbers. The C f
 - Unsafe Swift https://developer.apple.com/videos/play/wwdc2020/10648/
 - Safely manage pointers in Swift https://developer.apple.com/videos/play/wwdc2020/10167/
 - https://developer.apple.com/documentation/swift/using-imported-c-structs-and-unions-in-swift
+- https://developer.apple.com/documentation/swift/opaquepointer
 
 ## Swift Unsafe API names
 
@@ -54,6 +55,8 @@ The basis of the package is a C library for working with random numbers. The C f
 
 These rebind memory types. Better to do non-rebinding casting withUnsafeBytes or rawPointer.load(as)
 Since working with C anyway, pass the pointer into a `void*` and do what you need to do. YOLO. 
+
+(See UnsafeBufferView for the better way.)
 
 - [assumingMemoryBound(to:)](https://developer.apple.com/documentation/swift/unsafemutablerawpointer/assumingmemorybound(to:))
 - [bindMemory(to:capacity)](https://developer.apple.com/documentation/swift/unsafemutablerawpointer/bindmemory(to:capacity:))

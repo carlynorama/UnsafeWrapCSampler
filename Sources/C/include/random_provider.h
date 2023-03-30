@@ -11,11 +11,27 @@
 
 #include <stdio.h>
 
-typedef union c_color * CColor;
+//NOTE: I would not normally have my union definition in the header file. I would do a typdef (see below) or `extern union c_color my_color`
+//https://developer.apple.com/documentation/swift/opaquepointer
+typedef struct td_color_test * OpaqueColor;
 
+//This union is a little endian layout for colors definable with hex layout #RRGGBBAA
+//This is NOT compliant with OpenGL and PNG formats RGBA32 as that assumes big endian,
+//i.e. they expect RED to be at byte[0], not byte[4]. Little Endian systems should implement
+//#AABBGGRR, but that is the opposite of how I'm used to writing hex colors, so yeah not gunna for this.
+union CColorRGBA {
+  uint32_t full;
+  uint8_t bytes[4];
+  struct {
+    uint8_t alpha;
+    uint8_t blue;
+    uint8_t green;
+    uint8_t red;
+  };
+};
 
-uint8_t random_provider_global_array[27];
-uint32_t random_provider_RGBA[9];
+uint8_t random_provider_uint8_array[27];
+uint32_t random_provider_RGBA_array[9];
 
 
 void seed_random(unsigned int seed);
@@ -26,25 +42,13 @@ void random_number_in_range_with_result_pointer(const int min, const int max, in
 int random_number_in_range(const int* min, const int* max);
 int random_number_base_plus_delta(const int* min, const int* max_delta);
 
-
 void random_array_of_zero_to_one_hundred(int* array, const size_t n);
 void random_array_of_min_to_max(int* array, const size_t n, const int min, const int max);
 void add_random_to_all_with_max_on_random(int* array, const size_t n, const int max);
-void add_random_to_all_capped(unsigned int* array, const size_t n, const int cap);
-
-
-void set_all_bits_high(void* array, const size_t n, const size_t type_size);
-void set_all_bits_low(void* array, const size_t n, const size_t type_size);
-void set_all_bits_random(void* array, const size_t n, const size_t type_size);
-
-void random_colors_full_alpha(uint32_t* array, const size_t n);
-uint32_t random_color_and_alpha();
-uint32_t random_color_full_alpha();
-void print_color_info(const uint32_t color_val);
-void print_color_components(const uint32_t color_val);
+void add_random_to_all_capped(unsigned int* array, const size_t n, unsigned int cap);
 
 void call_buffer_process_test();
-int buffer_process(int* settings,
+int fuzz_buffer(int* settings,
                    u_int settings_count,
                    const size_t* width_ptr,
                    const size_t* height_ptr,
@@ -54,6 +58,10 @@ int buffer_process(int* settings,
                    void* output_buffer
                    );
 
+void set_all_bits_high(void* array, const size_t n, const size_t type_size);
+void set_all_bits_low(void* array, const size_t n, const size_t type_size);
+void set_all_bits_random(void* array, const size_t n, const size_t type_size);
+void print_opaque(const void* p, const size_t byte_count);
 
 char random_letter();
 void print_message(const char* message);
@@ -61,12 +69,20 @@ void answer_to_life(char* result);
 void build_concise_message(char* result, size_t* length);
 void random_scramble(const char* input, char* output, size_t* length);
 
-
-void print_opaque(const void* p, const size_t byte_count);
 void acknowledge_buffer(int* array, const size_t n);
 void acknowledge_uint32_buffer(const uint32_t* array, const size_t n);
+void acknowledge_uint8_buffer(const uint8_t* array, const size_t n);
+
 
 void erased_tuple_receiver(const int* values, const size_t n);
 void erased_struct_member_receiver(const int* value_ptr);
+
+void random_colors_full_alpha(uint32_t* array, const size_t n);
+uint32_t random_color_and_alpha();
+uint32_t random_color_full_alpha();
+void print_color_info(const uint32_t color_val);
+void print_color_components(const uint32_t color_val);
+
+
 
 #endif /* random_provider_h */

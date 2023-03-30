@@ -9,6 +9,7 @@ The basis of the package is a C library for working with random numbers. The C f
 - https://developer.apple.com/documentation/Swift/manual-memory-management
 - Unsafe Swift https://developer.apple.com/videos/play/wwdc2020/10648/
 - Safely manage pointers in Swift https://developer.apple.com/videos/play/wwdc2020/10167/
+- https://developer.apple.com/documentation/swift/using-imported-c-structs-and-unions-in-swift
 
 ## Swift Unsafe API names
 

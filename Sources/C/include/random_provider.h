@@ -11,9 +11,12 @@
 
 #include <stdio.h>
 
-//NOTE: I would not normally have my union definition in the header file. I would do a typdef (see below) or `extern union c_color my_color`
-//https://developer.apple.com/documentation/swift/opaquepointer
-typedef struct td_color_test * OpaqueColor;
+
+
+//---------------------------------------------------------  typedefs
+
+
+//But Swift works GREAT when you put the full def in the header, so that's what I did for the Union.
 
 //This union is a little endian layout for colors definable with hex layout #RRGGBBAA
 //This is NOT compliant with OpenGL and PNG formats RGBA32 as that assumes big endian,
@@ -30,18 +33,25 @@ union CColorRGBA {
   };
 };
 
+
+//--------------------------------------------------------- constants
 uint8_t random_provider_uint8_array[27];
 uint32_t random_provider_RGBA_array[9];
 
 
+//------------------------------------------------------- initializer
 void seed_random(unsigned int seed);
 
+
+//----------------------------------------------------- single values
 int random_int();
 void random_int_with_result_pointer(int* result);
 void random_number_in_range_with_result_pointer(const int min, const int max, int* result);
 int random_number_in_range(const int* min, const int* max);
 int random_number_base_plus_delta(const int* min, const int* max_delta);
 
+
+//-----------------------  arrays of random values & modifying arrays
 void random_array_of_zero_to_one_hundred(int* array, const size_t n);
 void random_array_of_min_to_max(int* array, const size_t n, const int min, const int max);
 void add_random_to_all_with_max_on_random(int* array, const size_t n, const int max);
@@ -58,22 +68,36 @@ int fuzz_buffer(int* settings,
                    void* output_buffer
                    );
 
+//------------------------------------------------ working with void*
 void set_all_bits_high(void* array, const size_t n, const size_t type_size);
 void set_all_bits_low(void* array, const size_t n, const size_t type_size);
 void set_all_bits_random(void* array, const size_t n, const size_t type_size);
 void print_opaque(const void* p, const size_t byte_count);
 
+//-------------------------------------------------------------------
+//--------------------------------------------- "Color" (Union Style)
+void random_colors_full_alpha(uint32_t* array, const size_t n);
+uint32_t random_color_and_alpha();
+uint32_t random_color_full_alpha();
+void print_color_info(const uint32_t color_val);
+void print_color_components(const uint32_t color_val);
+
+//---------------------------------------------- working with strings
 char random_letter();
 void print_message(const char* message);
 void answer_to_life(char* result);
 void build_concise_message(char* result, size_t* length);
 void random_scramble(const char* input, char* output, size_t* length);
 
+
+//---------------------------------------------------- utility prints
 void acknowledge_buffer(int* array, const size_t n);
 void acknowledge_uint32_buffer(const uint32_t* array, const size_t n);
 void acknowledge_uint8_buffer(const uint8_t* array, const size_t n);
 
 
+
+//-------------------------------------------------------------------
 void erased_tuple_receiver(const int* values, const size_t n);
 void erased_struct_member_receiver(const int* value_ptr);
 
@@ -84,5 +108,15 @@ void print_color_info(const uint32_t color_val);
 void print_color_components(const uint32_t color_val);
 
 
+//------------------------------------- working with incomplete types
+//incomplete struct definitions / Opaque Types like these are imported as OpaquePointers. See BridgeColor example for ways to handle that.
+typedef struct opaque_color* OpaqueColor;
+typedef struct COpaqueColor COpaqueColor; //<-tricky to work with from Swift. If passed into a function as a pointer, easier.
 
+void test_opaque_color();
+uint32_t int_from_opaque_color(OpaqueColor color);
+uint32_t int_from_copaque_color_ptr(COpaqueColor* color);
+
+
+//-------------------------------------------------------------------
 #endif /* random_provider_h */

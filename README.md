@@ -62,3 +62,6 @@ Since working with C anyway, pass the pointer into a `void*` and do what you nee
 - [bindMemory(to:capacity)](https://developer.apple.com/documentation/swift/unsafemutablerawpointer/bindmemory(to:capacity:))
 - [withMemoryRebound(to:capacity:)](https://developer.apple.com/documentation/swift/unsafemutablerawpointer/withmemoryrebound(to:capacity:_:))
 
+## TODO:
+- //init(bitPattern pointer: OpaquePointer?)
+- //init(bitPattern objectID: ObjectIdentifier)

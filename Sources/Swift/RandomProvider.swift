@@ -12,6 +12,8 @@ import UWCSamplerC
 //Note: functions that casting to Int on exit could be avoided if the C functions used `size_t` instead of `int` (which is Int32).
 //Using int in these example to show use cases.
 
+
+
 @available(macOS 12, *)
 public struct RandomProvider {
     
@@ -347,8 +349,12 @@ public struct RandomProvider {
     }
 
 
-    func printOpaqueColor(_ color:OpaqueColor) {
-        print(color.red, color.green, color.blue, color.alpha)
+//    func printOpaqueColor(_ color:OpaqueColor) {
+//        print(color.red, color.green, color.blue, color.alpha)
+//    }
+    
+    public func testOpaqueColor() {
+        test_opaque_color()
     }
     
     
@@ -412,6 +418,24 @@ public struct RandomProvider {
             print(ptr_to_string)
         }
     }
+    
+//    let value = 42.13
+//    let data = withUnsafeBytes(of: value) { Data($0) }
+//
+//    print(data as NSData) // <713d0ad7 a3104540>
+    
+    //Assumes proper alingment
+//    let data = Data([0x71, 0x3d, 0x0a, 0xd7, 0xa3, 0x10, 0x45, 0x40])
+//    let value = data.withUnsafeBytes {
+//        $0.load(as: Double.self)
+//    }
+//    print(value) // 42.13
+    
+//    let data = Data([0x71, 0x3d, 0x0a, 0xd7, 0xa3, 0x10, 0x45, 0x40])
+//    var value = 0.0
+//    let bytesCopied = withUnsafeMutableBytes(of: &value, { data.copyBytes(to: $0)} )
+//    assert(bytesCopied == MemoryLayout.size(ofValue: value))
+//    print(value) // 42.13
     
     //Less safe. Only possible for single value types
     public func extractStructItem() {

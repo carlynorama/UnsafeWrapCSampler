@@ -3,34 +3,15 @@
 //  
 //
 //  Created by Carlyn Maw on 3/30/23.
-//
+//  Experiment on how to implement a Union in Swift.
 
-//TODO: bitPattern initializers??
 
 import Foundation
-
-//What CColorRGB looks like to the Swift
-
-//When using a union as a TypeDef there was only one initializer for the opaque type made available - init(bitPattern:)
-//init(bitPattern pointer: OpaquePointer?)
-//init(bitPattern objectID: ObjectIdentifier)
 
 
 public struct PseudoUnion {
     var full: UInt32
     
-    public init(full: UInt32) {
-        self.full = full
-    }
-    
-    public init(bytes:[UInt8]) {
-        var tmp = UInt32(bytes[0])
-        tmp += UInt32(bytes[1] << 8)
-        tmp += UInt32(bytes[2] << 16)
-        tmp += UInt32(bytes[3] << 24)
-        self.full = tmp
-    }
-
     //layout: 0xRRGGBBAA input leads to [0]AA, [1]BB, [2]GG, [3]RR
     
     let red_shift = 24
@@ -38,31 +19,66 @@ public struct PseudoUnion {
     let blue_shift = 8
     let alpha_shift = 0
     
+    public init(full: UInt32) {
+        self.full = full
+    }
+    
+    public init(bytes:[UInt8]) {
+//        var tmp = UInt32(bytes[0])
+//        tmp += UInt32(bytes[1]) << 8
+//        tmp += UInt32(bytes[2]) << 16
+//        tmp += UInt32(bytes[3]) << 24
+        self.full = bytes.withUnsafeBytes { (bytesPtr) -> UInt32 in
+            bytesPtr.load(as: UInt32.self)
+        }
+    }
+    
+    public init(red:UInt8, green:UInt8, blue:UInt8, alpha:UInt8) {
+        var tmp = UInt32(alpha) << alpha_shift
+        tmp += UInt32(blue) << blue_shift
+        tmp += UInt32(green) << green_shift
+        tmp += UInt32(red) << red_shift
+        self.full = tmp
+    }
+
+
+    
     public var bytes:[UInt8] {
         get {
-            var bytes:[UInt8] = []
-            bytes.append(UInt8(full & 0xFF)) //alpha
-            bytes.append(UInt8((full >> blue_shift) & 0xFF))
-            bytes.append(UInt8((full >> green_shift) & 0xFF))
-            bytes.append(UInt8((full >> red_shift) & 0xFF))
-            return bytes
+            
+//            //Works - manual shift style
+//            var bytes:[UInt8] = []
+//            bytes.append(UInt8(full & 0xFF)) //alpha
+//            bytes.append(UInt8((full >> blue_shift) & 0xFF))
+//            bytes.append(UInt8((full >> green_shift) & 0xFF))
+//            bytes.append(UInt8((full >> red_shift) & 0xFF))
+//            return bytes
+            
+            //could also explicitly ask for full.littleEndian or full.bigEndian,
+            //default MacOS little
+            withUnsafeBytes(of: full) {
+                precondition($0.count == 4)
+                return Array($0)
+            }
+            
         }
         set {
-            //Works.
+            
+//            //Works - manual shift style
 //            var tmp = UInt32(newValue[0]) //alpha
 //            tmp += UInt32(newValue[1]) << blue_shift
 //            tmp += UInt32(newValue[2]) << green_shift
 //            tmp += UInt32(newValue[3]) << red_shift
 //            full = tmp
-            //TODO: Is there a way to hijack the subscript?
+            
             full = newValue.withUnsafeBytes { (bytes) -> UInt32 in
                 bytes.load(as: UInt32.self)
             }
+            
         }
     }
     
     public var red:UInt8 {
-        
         get {
             UInt8((full >> red_shift) & 0xFF)
         }
@@ -98,7 +114,6 @@ public struct PseudoUnion {
         }
     }
     
-    
     public var alpha:UInt8 {
         get {
             UInt8((full >> alpha_shift) & 0xFF)
@@ -115,6 +130,5 @@ public struct PseudoUnion {
         print(bytes)
         print(String(format: "0x%08x", full))
     }
-    
     
 }

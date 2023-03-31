@@ -24,7 +24,14 @@
 
 //Note: it appears that unions need to be IN THE HEADER to be defined. Using Opaque types do not work correctly?
 
-struct td_color_test {
+struct opaque_color {
+    uint8_t alpha;
+    uint8_t blue;
+    uint8_t green;
+    uint8_t red;
+};
+
+struct COpaqueColor {
     uint8_t alpha;
     uint8_t blue;
     uint8_t green;
@@ -447,3 +454,56 @@ void call_buffer_process_test() {
     free(settings);
     free(output_buffer);
 }
+
+
+//-------------------------------------------------------------------
+//MARK: Opaque Pointer Example
+//-------------------------------------------------------------------
+
+
+uint32_t int_from_opaque_color(OpaqueColor color) {
+    printf("a%hhu, r%hhu\n", color->alpha, color->red);
+    uint32_t tmp = color->alpha;
+    tmp += color->blue << 8;
+    tmp += color->green << 16;
+    tmp += color->red << 24;
+    return tmp;
+}
+
+void test_opaque_color() {
+    OpaqueColor color = malloc(sizeof(uint8_t)*4);
+    color->alpha = 255;
+    color->blue = 0xCC;
+    color->green = 0xFF;
+    color->red = 0x33;
+    
+    uint32_t result = int_from_opaque_color(color);
+    
+    printf("POpaqueColor Test: 0x%08x", result);
+    free(color);
+}
+
+//CANNOT be used from Swift easily.
+//Swift can only work with pointers to incomplete types.
+uint32_t int_from_copaque_color(COpaqueColor color) {
+    printf("a%hhu, r%hhu\n", color.alpha, color.red);
+    uint32_t tmp = color.alpha;
+    tmp += color.blue << 8;
+    tmp += color.green << 16;
+    tmp += color.red << 24;
+    return tmp;
+}
+
+//CAN be used from Swift easily.
+uint32_t int_from_copaque_color_ptr(COpaqueColor* color) {
+    printf("a%hhu, r%hhu\n", color->alpha, color->red);
+    uint32_t tmp = color->alpha;
+    tmp += color->blue << 8;
+    tmp += color->green << 16;
+    tmp += color->red << 24;
+    return tmp;
+}
+
+
+
+

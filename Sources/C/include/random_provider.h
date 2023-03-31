@@ -4,7 +4,8 @@
 //
 //  Created by Carlyn Maw on 3/25/23.
 //
-// NOTE: The const in the header file makes a difference to the Swift Unsafe pointer type.
+// NOTE: A const in the function definition in the header file makes a
+// difference to the Swift Unsafe pointer type.
 //
 #ifndef random_provider_h
 #define random_provider_h

@@ -11,34 +11,6 @@
 
 #include <stdio.h>
 
-
-
-//---------------------------------------------------------  typedefs
-
-
-//But Swift works GREAT when you put the full def in the header, so that's what I did for the Union.
-
-//This union is a little endian layout for colors definable with hex layout #RRGGBBAA
-//This is NOT compliant with OpenGL and PNG formats RGBA32 as that assumes big endian,
-//i.e. they expect RED to be at byte[0], not byte[4]. Little Endian systems should implement
-//#AABBGGRR, but that is the opposite of how I'm used to writing hex colors, so yeah not gunna for this.
-union CColorRGBA {
-  uint32_t full;
-  uint8_t bytes[4];
-  struct {
-    uint8_t alpha;
-    uint8_t blue;
-    uint8_t green;
-    uint8_t red;
-  };
-};
-
-
-//--------------------------------------------------------- constants
-uint8_t random_provider_uint8_array[27];
-uint32_t random_provider_RGBA_array[9];
-
-
 //------------------------------------------------------- initializer
 void seed_random(unsigned int seed);
 
@@ -68,19 +40,44 @@ int fuzz_buffer(int* settings,
                    void* output_buffer
                    );
 
+
+//------------------------------------------- retrieving fixed arrays
+uint8_t random_provider_uint8_array[27];
+uint32_t random_provider_RGBA_array[9];
+
+
 //------------------------------------------------ working with void*
 void set_all_bits_high(void* array, const size_t n, const size_t type_size);
 void set_all_bits_low(void* array, const size_t n, const size_t type_size);
 void set_all_bits_random(void* array, const size_t n, const size_t type_size);
 void print_opaque(const void* p, const size_t byte_count);
 
-//-------------------------------------------------------------------
+
 //--------------------------------------------- "Color" (Union Style)
+
+//But Swift works GREAT when you put the full def in the header, so that's what I did for the Union.
+
+//This union is a little endian layout for colors definable with hex layout #RRGGBBAA
+//This is NOT compliant with OpenGL and PNG formats RGBA32 as that assumes big endian,
+//i.e. they expect RED to be at byte[0], not byte[4]. Little Endian systems should implement
+//#AABBGGRR, but that is the opposite of how I'm used to writing hex colors, so yeah not gunna for this.
+union CColorRGBA {
+  uint32_t full;
+  uint8_t bytes[4];
+  struct {
+    uint8_t alpha;
+    uint8_t blue;
+    uint8_t green;
+    uint8_t red;
+  };
+};
+
 void random_colors_full_alpha(uint32_t* array, const size_t n);
 uint32_t random_color_and_alpha();
 uint32_t random_color_full_alpha();
 void print_color_info(const uint32_t color_val);
 void print_color_components(const uint32_t color_val);
+
 
 //---------------------------------------------- working with strings
 char random_letter();
@@ -96,22 +93,23 @@ void acknowledge_uint32_buffer(const uint32_t* array, const size_t n);
 void acknowledge_uint8_buffer(const uint8_t* array, const size_t n);
 
 
-
+//-------------------------------------------------------------------
 //-------------------------------------------------------------------
 void erased_tuple_receiver(const int* values, const size_t n);
 void erased_struct_member_receiver(const int* value_ptr);
-
-void random_colors_full_alpha(uint32_t* array, const size_t n);
-uint32_t random_color_and_alpha();
-uint32_t random_color_full_alpha();
-void print_color_info(const uint32_t color_val);
-void print_color_components(const uint32_t color_val);
+//-------------------------------------------------------------------
+//-------------------------------------------------------------------
 
 
+//
 //------------------------------------- working with incomplete types
-//incomplete struct definitions / Opaque Types like these are imported as OpaquePointers. See BridgeColor example for ways to handle that.
+//incomplete struct definitions / Opaque Types like these are imported
+//as OpaquePointers. See BridgeColor example for ways to handle that.
 typedef struct opaque_color* OpaqueColor;
-typedef struct COpaqueColor COpaqueColor; //<-tricky to work with from Swift. If passed into a function as a pointer, easier.
+typedef struct COpaqueColor COpaqueColor; //<-tricky to work with
+                                          //from Swift. If passed
+                                          //into a function as a
+                                          //pointer, easier.
 
 void test_opaque_color();
 uint32_t int_from_opaque_color(OpaqueColor color);
@@ -120,3 +118,7 @@ uint32_t int_from_copaque_color_ptr(COpaqueColor* color);
 
 //-------------------------------------------------------------------
 #endif /* random_provider_h */
+
+
+//-------------------------------------------------------------------
+//-------------------------------------------------------------------

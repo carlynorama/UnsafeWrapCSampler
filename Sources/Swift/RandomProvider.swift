@@ -150,29 +150,6 @@ public struct RandomProvider {
         
     }
     
-    
-    //MARK: Retrieving Fixed Size Arrays of Known Types
-    
-    public func fetchBaseBuffer() -> [UInt8] {
-        //"let array = random_provider_uint8_array" Returns tuple size of fixed size array.
-        fetchFixedSizeCArray(source: random_provider_uint8_array, boundToType: UInt8.self)
-    }
-    
-    public func fetchBaseBufferRGBA() -> [UInt32] {
-        fetchFixedSizeCArray(source: random_provider_RGBA_array, boundToType: UInt32.self)
-    }
-    
-    //Okay to use assumingMemoryBound here IF using type ACTUALLY bound to.
-    //Else see UnsafeBufferView struct example using .loadBytes to recast read values without
-    //changing underlying memory.
-    func fetchFixedSizeCArray<T, R>(source:T, boundToType:R.Type) -> [R] {
-        withUnsafeBytes(of: source) { (rawPointer) -> [R] in
-            let bufferPointer = rawPointer.assumingMemoryBound(to: boundToType)
-            return [R](bufferPointer)
-        }
-    }
-    
-    
     //MARK: Complex Call Example - Fuzz Values in a UInt8 array.
     
     //Use C to call the underlying function to make sure it works.
@@ -196,33 +173,54 @@ public struct RandomProvider {
         //NOTE: Since fuzz_buffer takes a void*, which means an UnsafeRawPointer, it cannot be used with a let
         var m_base_buffer = base_buffer
         
+        //vars that don't really do much beyond being passed to function to prove they can be.
         var settings:[CInt] = [300, 2883, 499832, 6]
         var width = 3
         var height = 3
         let bytes_per_pixel = 3
         
+        //results buffer
         var outputBuffer:[UInt8] = Array(repeating: 0, count: width * height * bytes_per_pixel)
         //Note: Reserving capacity is not good enough. Must be written to.
         //outputBuffer.reserveCapacity(width * height * bytes_per_pixel)
         
-        let size_result = UnsafeMutablePointer<Int>.allocate(capacity: 1)
-        size_result.initialize(to: 0)
+        //also a result container, implicitly cast to UnsafeMutablePointer<Int> in function call.
+        var sizeResult:Int = 0
         
         //S:-- fuzz_buffer(settings: UnsafeMutablePointer<Int32>!, settings_count: u_int, width_ptr: UnsafePointer<Int>!, height_ptr: UnsafePointer<Int>!, bytes_per_pixel: Int, calculated_size_ptr: UnsafeMutablePointer<Int>!, input_buffer: UnsafeRawPointer!, output_buffer: UnsafeMutableRawPointer!)
         //C:-- int fuzz_buffer(int* settings,u_int settings_count,const size_t* width_ptr,const size_t* height_ptr,size_t bytes_per_pixel,size_t* calculated_size_ptr,const void* input_buffer,void* output_buffer);
-        fuzz_buffer(&settings, CUnsignedInt(settings.count), &width, &height, bytes_per_pixel, size_result, &m_base_buffer, &outputBuffer)
+        fuzz_buffer(&settings, CUnsignedInt(settings.count), &width, &height, bytes_per_pixel, &sizeResult, &m_base_buffer, &outputBuffer)
         //fuzz_buffer uses `unsigned char char_whiffle(const unsigned char* byte, const unsigned char wiffle)` to add a ±random amount to each char in the buffer.
         
-        print(size_result.pointee)
-        size_result.deallocate()
-        
-        //print(outputBuffer)
-        
-        let copy = outputBuffer
+        //This function DID take a let, because a typed array-pointer, which is different than
+        // a pointer to other types.
+        //let copy = outputBuffer
         //C:-- void acknowledge_uint8_buffer(const uint8_t* array, const size_t n)
-        acknowledge_uint8_buffer(copy, outputBuffer.count)
+        //acknowledge_uint8_buffer(copy, outputBuffer.count)
         
         return outputBuffer
+    }
+    
+    
+    //MARK: Retrieving Fixed Size Arrays of Known Types
+    
+    public func fetchBaseBuffer() -> [UInt8] {
+        //"let array = random_provider_uint8_array" Returns tuple size of fixed size array.
+        fetchFixedSizeCArray(source: random_provider_uint8_array, boundToType: UInt8.self)
+    }
+    
+    public func fetchBaseBufferRGBA() -> [UInt32] {
+        fetchFixedSizeCArray(source: random_provider_RGBA_array, boundToType: UInt32.self)
+    }
+    
+    //Okay to use assumingMemoryBound here IF using type ACTUALLY bound to.
+    //Else see UnsafeBufferView struct example using .loadBytes to recast read values without
+    //changing underlying memory.
+    func fetchFixedSizeCArray<T, R>(source:T, boundToType:R.Type) -> [R] {
+        withUnsafeBytes(of: source) { (rawPointer) -> [R] in
+            let bufferPointer = rawPointer.assumingMemoryBound(to: boundToType)
+            return [R](bufferPointer)
+        }
     }
     
     //MARK: Void* Array Handling
@@ -257,31 +255,137 @@ public struct RandomProvider {
         }
     }
     
-    //Have not fully tested. P
+    //TODO: Have not tested cPrintHexAnyArray with non numeric types.
     func cPrintHexAnyArray(_ array:[Any]) {
         print("opaque:")
         var for_pointer = array //withUnsafeBufferPointer does not work in this case of passing to void*
-                                //C:--  void print_opaque(const void* p, const size_t byte_count);
+        //C:--  void print_opaque(const void* p, const size_t byte_count);
         print_opaque(&for_pointer, array.count)
     }
     
+    //MARK: CColorRGBA Union Color
+    
+    public func makeRandomUInt32Buffer(count:Int) -> [UInt32] {
+        var dataBuffer = Array<UInt32>(repeating: 0, count: count)
+        //C:-- void random_colors_full_alpha(uint32_t* array, const size_t n);
+        random_colors_full_alpha(&dataBuffer, count);
+        return dataBuffer
+    }
+    
+    
+    public func printUInt32AsColor(colorInt:UInt32) {
+        //C:-- void print_color_components(const uint32_t color_val)
+        //This function casts the uint32_t to a CColorRGBA internally
+        print_color_components(colorInt)
+    }
+    
+    public func printUInt32BufferAsColor(_ buffer:[UInt32]) {
+        for item in buffer {
+            //print(String(format: "0x%08x", item))
+            print(String(item, radix: 16, uppercase: true))
+        }
+    }
+    
+    func printCColorRGBA(_ color:CColorRGBA) {
+        print(color.full)
+        print(color.bytes)
+        print(color.red, color.green, color.blue, color.alpha)
+    }
+    
+    public func makeAndVerifyCColor(_ colorInt:UInt32) ->  CColorRGBA {
+        let color = CColorRGBA(full: colorInt)
+        printCColorRGBA(color)
+        return color
+    }
+    
+    
+    public func castUInt32BufferAsColors(_ buffer:[UInt32]) -> [CColorRGBA] {
+        buffer.lazy.map { CColorRGBA(full: $0) }  //TODO: does lazy matter here? Only when in an extension?
+    }
+    
+    public func printCColorRGBABuffer(_ buffer:[CColorRGBA]) {
+        for item in buffer {
+            //print(String(format: "0x%08x", item))
+            print(String(item.full, radix: 16, uppercase: true))
+        }
+    }
+    
+//    public func retrieveColorFromData(from data:Data, at offset:Int = 0) -> CColorRGBA {
+//        let colors_tmp = readUInt32(from: data, at: offset)
+//        print(String(colors_tmp, radix: 16, uppercase: true))
+//        return CColorRGBA(full: colors_tmp)
+//    }
+    
+    //    let data = Data([0x71, 0x3d, 0x0a, 0xd7, 0xa3, 0x10, 0x45, 0x40])
+    //aligned data is data that NOT a slice. [0] is at a pointer that is at the 0 of a register/granularity section.
+    //https://developer.ibm.com/articles/pa-dalign/
+    //TODO: Need to check on load to see if it can safely handle slices.
+    public func readNumericFrom<N:Numeric>(alignedData:Data, numericType:N.Type) -> N {
+        //Compound types should use stride?
+        precondition(alignedData.count == MemoryLayout<N>.size) //Could determine type switch on data count with error.
+        return alignedData.withUnsafeBytes {
+            $0.load(as: N.self)
+        }
+    }
+    
+    public func readNumericFromDataOfCorrectCount<N:Numeric>(data:Data, numericType:N.Type) -> N {
+        //Compound types should use stride?
+        precondition(data.count == MemoryLayout<N>.size) //Could determine type switch on data count with error.
+        var newValue:N = 0
+        let copiedCount = withUnsafeMutableBytes(of: &newValue, { data.copyBytes(to: $0)} )
+        precondition(copiedCount == MemoryLayout.size(ofValue: newValue))
+        return newValue
+    }
+    
+    
+    
+    
+
+    
+    
+    
+    //CColor is a UNION defined in c code
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    /// ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ///  ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ///   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    //TODO: Improve this function to get from 4byte data and a [UInt8].count % 4 == 0 array.
+
+    
+    func readUInt32(from data:Data, at offset:Int) -> UInt32 {
+        data.withUnsafeBytes { (buffer: UnsafeRawBufferPointer) in
+            //buffer.load(as: T.Type)
+            buffer.load(fromByteOffset: offset, as: UInt32.self)
+        }
+    }
+    
+
+    
+
+    
     //MARK: Strings
     
+    
+    //Init buffer known to be bigger than what you'll get out.
     public func getAnswer() -> String {
         //fill with 0 (NULL) and C string functions will consider it empty.
         //512 in this case reps the maximum size expect to get back.
-        var dataBuffer = Array<Int8>(repeating: 0, count: 512)
+        var dataBuffer = Array<UInt8>(repeating: 0, count: 512)
+        //C:-- void answer_to_life(char* result)
         answer_to_life(&dataBuffer)
         return String(cString: dataBuffer)
     }
     
-    //void random_scramble(const char* input, char* output, size_t* length)
+    //Combines cPrintMessage(message:String) and getString() examples.
     public func scrambleMessage(message:String) -> String {
         var length = 0
-        //trying to pass &message to function doesn't work. & requires a var.
+        //trying to pass &message to function doesn't work. & requires a var
+        //but explicit withUnsafePointer(to:message) means can preserve the let
         return withUnsafePointer(to:message) { (message_ptr) -> String in
+            //C:-- void random_scramble(const char* input, char* output, size_t* length);
             random_scramble(message_ptr, nil, &length)
             return String(unsafeUninitializedCapacity: length) { buffer in
+                //C:-- void random_scramble(const char* input, char* output, size_t* length);
                 random_scramble(message_ptr, buffer.baseAddress, &length)
                 print(String(cString: buffer.baseAddress!))
                 precondition(buffer[length-1]==0)
@@ -290,20 +394,23 @@ public struct RandomProvider {
         }
     }
     
-    //
+    //const char* message will take message:String, no problems.
     func cPrintMessage(message:String) {
-        //see also result =  message.withCSString { (str) -> SomeType  in ...}
-        
-        //void print_message(const char* message);
+        //C:-- void print_message(const char* message);
         print_message(message)
+        
+        //If needed to get a return value:
+        //let result:SomeType =  message.withCSString { (str) -> SomeType  in ...}
     }
     
     
     //when keeping the allocation small is more important than the double call
     func getString() -> String {
         var length = 0
+        //C:-- void build_concise_message(char* result, size_t* length);
         build_concise_message(nil, &length)
         return String(unsafeUninitializedCapacity: length) { buffer in
+            //C:-- void build_concise_message(char* result, size_t* length);
             build_concise_message(buffer.baseAddress, &length)
             print(String(cString: buffer.baseAddress!))
             precondition(buffer[length-1]==0)
@@ -313,57 +420,10 @@ public struct RandomProvider {
     
     
     
-    //MARK: COLOR
-    
-    public func makeRandomColorBuffer(count:Int) -> [UInt32] {
-        var dataBuffer = Array<UInt32>(repeating: 0, count: count)
-        random_colors_full_alpha(&dataBuffer, count);
-        return dataBuffer
-    }
-    
-    public func printColorInfo(colorInt:UInt32) {
-        print_color_components(colorInt)
-    }
-    
-    public func printColorBuffer(_ buffer:[UInt32]) {
-        for item in buffer {
-            print(String(format: "0x%08x", item))
-        }
-    }
-    
-    //CColor is a UNION defined in c code
-    public func retrieveColorsFromData(from data:Data, at offset:Int = 0) -> [CColorRGBA]{
-        let colors_tmp = [readUInt32(from: data, at: offset)]
-        return colors_tmp.map { CColorRGBA(full: $0) }
-    }
-    
-    public func makeAndVerifyCColor(_ colorInt:UInt32) {
-        let color = CColorRGBA(full: colorInt)
-        printCColorRGBA(color)
-    }
-    
-    func printCColorRGBA(_ color:CColorRGBA) {
-        print(color.full)
-        print(color.bytes)
-        print(color.red, color.green, color.blue, color.alpha)
-    }
-
-
-//    func printOpaqueColor(_ color:OpaqueColor) {
-//        print(color.red, color.green, color.blue, color.alpha)
-//    }
-    
-    public func testOpaqueColor() {
-        test_opaque_color()
-    }
     
     
-    func readUInt32(from data:Data, at offset:Int) -> UInt32 {
-        data.withUnsafeBytes { (buffer: UnsafeRawBufferPointer) in
-            //buffer.load(as: T.Type)
-            buffer.load(fromByteOffset: offset, as: UInt32.self)
-        }
-    }
+    
+    
     
     
     

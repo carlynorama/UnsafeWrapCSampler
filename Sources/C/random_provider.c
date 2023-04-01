@@ -185,7 +185,10 @@ int fuzz_buffer(int* settings,
         printf("i:%d, v:%02x\t", p, ((unsigned char*)input_buffer)[p]);
         if ((p+1) % ((*width_ptr * bytes_per_pixel)) == 0) { printf("\n"); }
         //((char*)output_buffer)[p] = ((unsigned char*)input_buffer)[p] + 2;
-        ((unsigned char*)output_buffer)[p] = char_whiffle(((unsigned char*)input_buffer)[p], 20);
+        //unsigned char test = 100;
+        //((unsigned char*)output_buffer)[p] = char_whiffle(&test, 5);
+        ((unsigned char*)output_buffer)[p] = char_whiffle(&((unsigned char*)input_buffer)[p], 20);
+        
     }
     printf("\nOUTPUT\n");
     for (int p = 0; p < *calculated_size_ptr; p++) {
@@ -272,13 +275,16 @@ char random_letter() {
 }
 
 void print_message(const char* message) {
-    printf("I have a message for you... %s", message);
+    printf("I have a message for you... %s\n", message);
 }
 
 void answer_to_life(char* result) {
-    printf("result before assignment: %p, %s\n", result, result);
-    sprintf(result, "The answer to life, the universe and everything is %d", rand());
-    printf("result after assignment: %p, %s\n", result, result);
+    if (result != NULL) {
+        printf("result before assignment: %p, %s\n", result, result);
+        sprintf(result, "The answer to life, the universe and everything is %d", rand());
+        printf("result after assignment: %p, %s\n", result, result);
+    }
+
 }
 
 void build_concise_message(char* result, size_t* length) {
@@ -291,17 +297,33 @@ void build_concise_message(char* result, size_t* length) {
 }
 
 void random_scramble(const char* input, char* output, size_t* length) {
-    printf("message to scramble: %s", input);
-    *length = strlen(input) + 1;
     
+    //char* message_str = "abcdefghijklmnopqrstuvwxyz";
+    *length = strlen(input) + 1;
+    print_opaque(input, *length);
     if (output != NULL) {
-        char* tmp[*length];
-        tmp[*length-1] = 0;
         for (size_t i = 0; i < *length-1; i++) {
-            tmp[i] = random_letter();
+            //printf("%x ", input[i]);//65;//random_letter();
+            output[i] = random_letter();
+            //printf("%p\t%x\n", &output[i], output[i]);
         }
-        sprintf(output, "%s", *tmp);
     }
+    
+    printf("message to scramble: %s\n", input);
+    //*length = strlen(input) + 1;
+    
+    //In this code the stride was off all of a sudden?
+//    if (output != NULL) {
+//        char* tmp[*length];
+//        tmp[*length-1] = 0;
+//        for (size_t i = 0; i < *length-1; i++) {
+//            tmp[i] = random_letter();
+//        }
+//        print_opaque(tmp, *length);
+//        sprintf(output, "%s", *tmp);
+//    } else {
+//        printf("length is:%zu\n", *length);
+//    }
 }
 
 

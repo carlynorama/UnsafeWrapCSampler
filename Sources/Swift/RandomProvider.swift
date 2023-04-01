@@ -436,19 +436,30 @@ public struct RandomProvider {
         //fill with 0 (NULL) and C string functions will consider it empty.
         //512 in this case reps the maximum size expect to get back.
         var dataBuffer = Array<UInt8>(repeating: 0, count: 512)
-        //C:-- void answer_to_life(char* result)
-        answer_to_life(&dataBuffer)
+        
+        dataBuffer.withUnsafeMutableBufferPointer { bufferPointer in
+            //C:-- void answer_to_life(char* result)
+            answer_to_life(bufferPointer.baseAddress)
+        }
         return String(cString: dataBuffer)
+    }
+    
+    public func randomLetter() -> String{
+        let letter:Data = Data([UInt8(random_letter())])
+        return  String(data: letter, encoding: .utf8) ?? "Not a letter.";
     }
     
     //Combines cPrintMessage(message:String) and getString() examples.
     public func scrambleMessage(message:String) -> String {
+        print(message.count)
         var length = 0
         //trying to pass &message to function doesn't work. & requires a var
         //but explicit withUnsafePointer(to:message) means can preserve the let
+        print_opaque(message, message.count)
         return withUnsafePointer(to:message) { (message_ptr) -> String in
             //C:-- void random_scramble(const char* input, char* output, size_t* length);
             random_scramble(message_ptr, nil, &length)
+            print("length:\(length)")
             return String(unsafeUninitializedCapacity: length) { buffer in
                 //C:-- void random_scramble(const char* input, char* output, size_t* length);
                 random_scramble(message_ptr, buffer.baseAddress, &length)
@@ -460,7 +471,7 @@ public struct RandomProvider {
     }
     
     //const char* message will take message:String, no problems.
-    func cPrintMessage(message:String) {
+    public func cPrintMessage(message:String) {
         //C:-- void print_message(const char* message);
         print_message(message)
         
@@ -470,7 +481,7 @@ public struct RandomProvider {
     
     
     //when keeping the allocation small is more important than the double call
-    func getString() -> String {
+    public func getString() -> String {
         var length = 0
         //C:-- void build_concise_message(char* result, size_t* length);
         build_concise_message(nil, &length)

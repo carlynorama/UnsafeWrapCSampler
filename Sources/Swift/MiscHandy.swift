@@ -156,9 +156,6 @@ struct MiscHandy {
     
     
     
-    
-    
-    
 }
 
 fileprivate struct ExampleStruct {

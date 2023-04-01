@@ -265,6 +265,12 @@ public struct RandomProvider {
     
     //MARK: CColorRGBA Union Color
     
+    public func printUInt32AsColor(colorInt:UInt32) {
+        //C:-- void print_color_components(const uint32_t color_val)
+        //This function casts the uint32_t to a CColorRGBA internally
+        print_color_components(colorInt)
+    }
+    
     public func makeRandomUInt32Buffer(count:Int) -> [UInt32] {
         var dataBuffer = Array<UInt32>(repeating: 0, count: count)
         //C:-- void random_colors_full_alpha(uint32_t* array, const size_t n);
@@ -273,12 +279,6 @@ public struct RandomProvider {
     }
     
     
-    public func printUInt32AsColor(colorInt:UInt32) {
-        //C:-- void print_color_components(const uint32_t color_val)
-        //This function casts the uint32_t to a CColorRGBA internally
-        print_color_components(colorInt)
-    }
-    
     public func printUInt32BufferAsColor(_ buffer:[UInt32]) {
         for item in buffer {
             //print(String(format: "0x%08x", item))
@@ -286,7 +286,7 @@ public struct RandomProvider {
         }
     }
     
-    func printCColorRGBA(_ color:CColorRGBA) {
+    public func printCColorRGBA(_ color:CColorRGBA) {
         print(color.full)
         print(color.bytes)
         print(color.red, color.green, color.blue, color.alpha)
@@ -309,18 +309,154 @@ public struct RandomProvider {
             print(String(item.full, radix: 16, uppercase: true))
         }
     }
+
+    public func castingTests(theInt:UInt32, theColor:CColorRGBA) {
+        //Nope.
+        //let castItC = theInt as? CColorRGBA
+        //let castCtI = theColor as? UInt32
+        
+        if let forceLoadAsColor:CColorRGBA = withUnsafeBytes(of: theInt, { bytesPointer in
+            return bytesPointer.baseAddress?.load(as: CColorRGBA.self)
+        }) {
+            printCColorRGBA(forceLoadAsColor)
+        }
+        
+        
+        //---------- Using full initializer ------------
+        let reinit = CColorRGBA(full: theInt)
+        printCColorRGBA(reinit)
+        
+        
+        //---------- Using bytes initializer ------------
+        let tupleInit = withUnsafeBytes(of: theInt) { bytesPointer in
+            let array = [UInt8](bytesPointer)
+            //fixed size arrays in C are treated in Swift as tuples.
+            return CColorRGBA(bytes: (array[0], array[1], array[2], array[3]))
+        }
+        printCColorRGBA(tupleInit)
+        
+
+        let tupleInitLoadAs:CColorRGBA = withUnsafeBytes(of: theInt) { bytesPointer in
+            return CColorRGBA(bytes: (bytesPointer.baseAddress?.load(as: (UInt8, UInt8, UInt8, UInt8).self)).unsafelyUnwrapped)
+        }
+        printCColorRGBA(tupleInitLoadAs)
+        
+        let tupleInitMemcpy:CColorRGBA = CColorRGBA(bytes:uint32ToTuple_memcpy_yolo(theInt))
+        printCColorRGBA(tupleInitMemcpy)
+        
+        //---------- end using anon struct initializer ------------
+        //CColorRGBA(CColorRGBA.__Unnamed_struct___Anonymous_field2)
+        let structInit = withUnsafeBytes(of: theInt) { bytesPointer in
+            let structCast = bytesPointer.baseAddress?.load(as: CColorRGBA.__Unnamed_struct___Anonymous_field2.self)
+            return CColorRGBA(structCast!)
+            
+            //Notes: Can init an array if want explicit destinations for the UInts
+            //let array = [UInt8](bytesPointer)
+            //return CColorRGBA(CColorRGBA.__Unnamed_struct___Anonymous_field2(alpha: array[0], blue: array[1], green: array[2], red: array[3]))
+            
+            //If use a named struct it's less ugly.
+            //CColorRGBA2(components: c_color_comp(alpha: T##UInt8, blue: T##UInt8, green: T##UInt8, red: T##UInt8))
+        }
+        printCColorRGBA(structInit)
+        
+        let intCast = theColor.full
+    }
+
     
-//    public func retrieveColorFromData(from data:Data, at offset:Int = 0) -> CColorRGBA {
-//        let colors_tmp = readUInt32(from: data, at: offset)
-//        print(String(colors_tmp, radix: 16, uppercase: true))
-//        return CColorRGBA(full: colors_tmp)
-//    }
+    //MARK: Crazy Int32 -> tuple/CColor mechanisms. All less safe and more arcane than the .load(as)
+    //---------------------------------------------------------------------------------------
+    //---------------------------------------------------------------------------------------
+    public func testTransfer() {
+        let quadInt = [98, 344444, 82737364, 2827272]
+        let quadInt32:[UInt32] = [64000, 32000, 8654, 12]
+        let quadDouble:[Double] = [7.5553322, 2717481.2, 27171.271712, 3.14373727272]
+        
+        let tInt = arrayQuadToTuple(quadInt)
+        let tInt32 = arrayQuadToTuple(quadInt32)
+        let tDouble = arrayQuadToTuple(quadDouble)
+        
+        print(tInt, tInt32, tDouble)
+        
+        print(uint32ToTuple_memcpy_yolo(0x44778822))
+        print(uint32ToTupleUsingBind(0x44778822))
+        
+        let testVar:UInt32 = 0x44778822
+        var color = uint32ToCColorUsingRebound(testVar)
+        color.red = 0x99
+        print(testVar)
+        print(color.full)
+    }
+    
+    func arrayQuadToTuple<N:Numeric>(_ array:[N]) -> (N, N, N, N) {
+        var tuple:(N, N, N, N) = (0, 0, 0, 0)
+        let _ = withUnsafeMutablePointer(to: &tuple) { tuplePointer in
+            //destination pointer, source, number of bytes
+            memcpy(tuplePointer, array, 4*MemoryLayout<N>.size)
+        }
+        return tuple
+    }
+    
+    func uint32ToTuple_memcpy_yolo(_ sourceUInt32:UInt32) -> (UInt8,UInt8,UInt8,UInt8) {
+        var tuple:(UInt8,UInt8,UInt8,UInt8) = (0, 0, 0, 0)
+        let _ = withUnsafeMutablePointer(to: &tuple) { tuplePointer in
+            withUnsafePointer(to: sourceUInt32) { intPointer in
+                //destination pointer, source, number of bytes
+                memcpy(tuplePointer, intPointer, 4)
+            }
+        }
+        return tuple
+    }
+    
+    func uint32ToTupleUsingBind(_ sourceUInt32:UInt32)  -> (UInt8,UInt8,UInt8,UInt8) {
+        let rebound = withUnsafePointer(to: sourceUInt32) { intPointer -> (UInt8, UInt8, UInt8, UInt8) in
+            UnsafeRawPointer(intPointer).bindMemory(to: (UInt8,UInt8,UInt8,UInt8).self, capacity: 1).pointee
+        }
+        return rebound
+    }
+    
+    func uint32ToCColorUsingReboundViaBytes(_ sourceUInt32:UInt32)  -> CColorRGBA {
+        let color = withUnsafePointer(to: sourceUInt32) { intPointer -> CColorRGBA in
+            UnsafeRawPointer(intPointer).withMemoryRebound(to: (UInt8,UInt8,UInt8,UInt8).self, capacity: 1) { valuePointer in
+                CColorRGBA(bytes: valuePointer.pointee)
+            }
+        }
+        return color
+    }
+    
+    func uint32ToCColorUsingRebound(_ sourceUInt32:UInt32)  -> CColorRGBA {
+        let color = withUnsafePointer(to: sourceUInt32) { sourcePointer -> CColorRGBA in
+            UnsafeMutableRawPointer(mutating: sourcePointer).withMemoryRebound(to: CColorRGBA.self, capacity: 1) { valuePointer in
+                 return valuePointer.pointee
+            }
+        }
+        return color
+    }
+    
+    func quadTupleToInt32(_ tuple:(UInt8,UInt8,UInt8,UInt8)) -> UInt32? {
+        withUnsafeBytes(of: tuple, { bytesPointer in
+            return bytesPointer.baseAddress?.load(as: UInt32.self)
+        })
+    }
+    
+    func eraseQuadTupleToCArray(_ tuple:(CInt, CInt, CInt, CInt)) {
+        
+        withUnsafePointer(to: tuple) { (tuplePointer) in
+            //C:-- void erased_tuple_receiver(const int* values, const size_t n);
+            erased_tuple_receiver(UnsafeRawPointer(tuplePointer).assumingMemoryBound(to: CInt.self), 4)
+        }
+        //easy_make_colors_struct(const uint8_t* values, const size_t n)
+    }
+    
+    
+    //---------------------------------------------------------------------------------------
+    //---------------------------------------------------------------------------------------
     
     //    let data = Data([0x71, 0x3d, 0x0a, 0xd7, 0xa3, 0x10, 0x45, 0x40])
     //aligned data is data that NOT a slice. [0] is at a pointer that is at the 0 of a register/granularity section.
     //https://developer.ibm.com/articles/pa-dalign/
     //TODO: Need to check on load to see if it can safely handle slices.
-    public func readNumericFrom<N:Numeric>(alignedData:Data, numericType:N.Type) -> N {
+    //TODO: Does Data ever provide a slice?
+    public func readNumericFrom<N:Numeric>(alignedData:Data, as numericType:N.Type) -> N {
         //Compound types should use stride?
         precondition(alignedData.count == MemoryLayout<N>.size) //Could determine type switch on data count with error.
         return alignedData.withUnsafeBytes {
@@ -328,7 +464,7 @@ public struct RandomProvider {
         }
     }
     
-    public func readNumericFromDataOfCorrectCount<N:Numeric>(data:Data, numericType:N.Type) -> N {
+    public func readNumericFrom<N:Numeric>(correctCountData data:Data, as numericType:N.Type) -> N {
         //Compound types should use stride?
         precondition(data.count == MemoryLayout<N>.size) //Could determine type switch on data count with error.
         var newValue:N = 0
@@ -337,10 +473,19 @@ public struct RandomProvider {
         return newValue
     }
     
-    
-    
+    //What happens if data is longer? This is what the video shows. Is it this easy?
+    public func readNumeric<N:Numeric>(from data:Data, at offset:Int = 0, as:N.Type) -> N {
+        data.withUnsafeBytes { (buffer: UnsafeRawBufferPointer) in
+            //buffer.load(as: T.Type)
+            buffer.load(fromByteOffset: offset, as: N.self)
+        }
+    }
     
 
+    
+    
+    
+    
     
     
     
@@ -350,7 +495,7 @@ public struct RandomProvider {
     ///  ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ///   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     //TODO: Improve this function to get from 4byte data and a [UInt8].count % 4 == 0 array.
-
+    
     
     func readUInt32(from data:Data, at offset:Int) -> UInt32 {
         data.withUnsafeBytes { (buffer: UnsafeRawBufferPointer) in
@@ -359,9 +504,9 @@ public struct RandomProvider {
         }
     }
     
-
     
-
+    
+    
     
     //MARK: Strings
     
@@ -427,100 +572,8 @@ public struct RandomProvider {
     
     
     
-    //MARK: Misc Functions from Videos
-    
-    func rawBuffer<T>(count:Int, initializer:T) {
-        let rawPointer = UnsafeMutableRawPointer.allocate(byteCount: MemoryLayout<T>.stride * count, alignment: MemoryLayout<T>.alignment)
-        let tPtr = rawPointer.initializeMemory(as: T.self, repeating: initializer, count: count)
-        //Do something.
-        tPtr.deinitialize(count: count)
-        rawPointer.deallocate()
-    }
-    
-    func exampleAssembler<Header>(header:Header, data:[Int32]) {
-        let offset = MemoryLayout<Header>.stride
-        let byteCount = offset + MemoryLayout<Int32>.stride * data.count
-        assert(MemoryLayout<Header>.alignment >= MemoryLayout<Int32>.alignment)
-        let bufferPointer = UnsafeMutableRawPointer.allocate(
-            byteCount: byteCount, alignment: MemoryLayout<Header>.alignment)
-        let headerPointer = bufferPointer.initializeMemory(as: Header.self, repeating: header, count: 1)
-        //TODO: how to init with contents of data
-        let elementPointer = (bufferPointer + offset).initializeMemory(as: Int32.self, repeating: 0, count: data.count)
-        
-        //DO SOMETHING
-        
-        elementPointer.deinitialize(count: data.count)
-        headerPointer.deinitialize(count: 1)
-        bufferPointer.deallocate()
-    }
-    
-    func precessData<T>(data:Data, as type:T.Type) {
-        let result = data.withUnsafeBytes { buffer -> T in
-            //let rawPointer = UnsafeRawPointer(buffer.baseAddress!)
-            //rawPointer.load(fromByteOffset: MemoryLayout<T>.stride, as: type)
-            return buffer.load(as: type)
-        }
-        print(result)
-    }
-    
-    //ONLY works for tuples because homogeneous
-    public func tupleEraser() {
-        let tuple:(CInt, CInt, CInt) = (0, 1, 2)
-        withUnsafePointer(to: tuple) { (tuplePointer: UnsafePointer<(CInt, CInt, CInt)>) in
-            erased_tuple_receiver(UnsafeRawPointer(tuplePointer).assumingMemoryBound(to: CInt.self), 3)
-        }
-    }
-    
-    //Safer
-    public func pointToType() {
-        let example = ExampleStruct()
-        withUnsafePointer(to: example.myString) { ptr_to_string in
-            print(ptr_to_string)
-        }
-    }
-    
-//    let value = 42.13
-//    let data = withUnsafeBytes(of: value) { Data($0) }
-//
-//    print(data as NSData) // <713d0ad7 a3104540>
-    
-    //Assumes proper alingment
-//    let data = Data([0x71, 0x3d, 0x0a, 0xd7, 0xa3, 0x10, 0x45, 0x40])
-//    let value = data.withUnsafeBytes {
-//        $0.load(as: Double.self)
-//    }
-//    print(value) // 42.13
-    
-//    let data = Data([0x71, 0x3d, 0x0a, 0xd7, 0xa3, 0x10, 0x45, 0x40])
-//    var value = 0.0
-//    let bytesCopied = withUnsafeMutableBytes(of: &value, { data.copyBytes(to: $0)} )
-//    assert(bytesCopied == MemoryLayout.size(ofValue: value))
-//    print(value) // 42.13
-    
-    //Less safe. Only possible for single value types
-    public func extractStructItem() {
-        let example = ExampleStruct()
-        
-        withUnsafePointer(to: example) { (ptr: UnsafePointer<ExampleStruct>) in
-            let rawPointer = (UnsafeRawPointer(ptr) + MemoryLayout<ExampleStruct>.offset(of: \.myNumber)!)
-            erased_struct_member_receiver(rawPointer.assumingMemoryBound(to: CInt.self))
-        }
-    }
-    
-    public func loadAsUInt8GetAsUInt32() {
-        
-        let uint8Pointer = UnsafeMutablePointer<UInt8>.allocate(capacity: 16)
-        uint8Pointer.initialize(repeating: 127, count: 16)
-        let uint32Pointer = UnsafeMutableRawPointer(uint8Pointer).bindMemory(to: UInt32.self, capacity: 4)
-        //DO NOT TOUCH uint8Pointer ever again. Not for use if thing would exist outside of function
-        // pass to something that needs 32
-        uint32Pointer.deallocate()
-    }
-    //also withMemoryRebound, .load better choices
+
 }
 
 
-struct ExampleStruct {
-    let myNumber:CInt = 42
-    let myString:String = "Hello"
-}
+

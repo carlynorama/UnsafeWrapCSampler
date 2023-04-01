@@ -73,6 +73,19 @@ union CColorRGBA {
   };
 };
 
+struct c_color_comp {
+  uint8_t alpha;
+  uint8_t blue;
+  uint8_t green;
+  uint8_t red;
+};
+
+union CColorRGBA2 {
+  uint32_t full;
+  uint8_t bytes[4];
+  struct c_color_comp components;
+};
+
 void random_colors_full_alpha(uint32_t* array, const size_t n);
 uint32_t random_color_and_alpha();
 uint32_t random_color_full_alpha();

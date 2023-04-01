@@ -349,7 +349,7 @@ void acknowledge_char_buffer(const char* array, const size_t n) {
 
 
 //-------------------------------------------------------------------
-//MARK: For Raw Pointer Tests
+//MARK: For MiscHandy
 //-------------------------------------------------------------------
 
 void erased_struct_member_receiver(const int* value_ptr) {
@@ -424,8 +424,21 @@ void print_color_components(const uint32_t color_val) {
     printf("\n");
 }
 
+void easy_make_colors_struct(const uint8_t* values, const size_t n) {
+    for (size_t i = 0; i < n; i++) {
+        printf("%d\t", values[i]);
+    }
+    printf("\n");
+    struct c_color_comp this_color;
+    this_color.red = values[3];
+    this_color.green = values[2];
+    this_color.blue = values[1];
+    this_color.alpha = values[0];
+    
+    printf("r%d\tg%d\tb%d\ta%d\t\n", this_color.red, this_color.green, this_color.blue, this_color.alpha);
+}
 
-
+// ----------- FOR REFERENCE
 //void random_colors_full_alpha(uint32_t* array, const size_t n) {
 //    uint8_t* cast = ((unsigned char *) array);
 //    //Finer grain control for reference.
@@ -453,7 +466,7 @@ void print_color_components(const uint32_t color_val) {
 //    base = base & ~one_bits_to_zero;
 //    return base;
 //}
-
+// ----------- END FOR REFERENCE
 
 
 

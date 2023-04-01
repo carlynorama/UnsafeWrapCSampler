@@ -201,28 +201,6 @@ public struct RandomProvider {
         return outputBuffer
     }
     
-    
-    //MARK: Retrieving Fixed Size Arrays of Known Types
-    
-    public func fetchBaseBuffer() -> [UInt8] {
-        //"let array = random_provider_uint8_array" Returns tuple size of fixed size array.
-        fetchFixedSizeCArray(source: random_provider_uint8_array, boundToType: UInt8.self)
-    }
-    
-    public func fetchBaseBufferRGBA() -> [UInt32] {
-        fetchFixedSizeCArray(source: random_provider_RGBA_array, boundToType: UInt32.self)
-    }
-    
-    //Okay to use assumingMemoryBound here IF using type ACTUALLY bound to.
-    //Else see UnsafeBufferView struct example using .loadBytes to recast read values without
-    //changing underlying memory.
-    func fetchFixedSizeCArray<T, R>(source:T, boundToType:R.Type) -> [R] {
-        withUnsafeBytes(of: source) { (rawPointer) -> [R] in
-            let bufferPointer = rawPointer.assumingMemoryBound(to: boundToType)
-            return [R](bufferPointer)
-        }
-    }
-    
     //MARK: Void* Array Handling
     
     //All the C functions below take void* reference.
@@ -359,11 +337,10 @@ public struct RandomProvider {
         }
         printCColorRGBA(structInit)
         
-        let intCast = theColor.full
     }
 
     
-    //MARK: Crazy Int32 -> tuple/CColor mechanisms. All less safe and more arcane than the .load(as)
+    //MARK: Crazy Int32 <-> tuple/CColor mechanisms. All less safe and more arcane than the .load(as)
     //---------------------------------------------------------------------------------------
     //---------------------------------------------------------------------------------------
     public func testTransfer() {
@@ -371,9 +348,9 @@ public struct RandomProvider {
         let quadInt32:[UInt32] = [64000, 32000, 8654, 12]
         let quadDouble:[Double] = [7.5553322, 2717481.2, 27171.271712, 3.14373727272]
         
-        let tInt = arrayQuadToTuple(quadInt)
-        let tInt32 = arrayQuadToTuple(quadInt32)
-        let tDouble = arrayQuadToTuple(quadDouble)
+        let tInt = arrayQuadToTuple_memcpy_yolo(quadInt)
+        let tInt32 = arrayQuadToTuple_memcpy_yolo(quadInt32)
+        let tDouble = arrayQuadToTuple_memcpy_yolo(quadDouble)
         
         print(tInt, tInt32, tDouble)
         
@@ -387,7 +364,7 @@ public struct RandomProvider {
         print(color.full)
     }
     
-    func arrayQuadToTuple<N:Numeric>(_ array:[N]) -> (N, N, N, N) {
+    func arrayQuadToTuple_memcpy_yolo<N:Numeric>(_ array:[N]) -> (N, N, N, N) {
         var tuple:(N, N, N, N) = (0, 0, 0, 0)
         let _ = withUnsafeMutablePointer(to: &tuple) { tuplePointer in
             //destination pointer, source, number of bytes
@@ -439,73 +416,16 @@ public struct RandomProvider {
     }
     
     func eraseQuadTupleToCArray(_ tuple:(CInt, CInt, CInt, CInt)) {
-        
         withUnsafePointer(to: tuple) { (tuplePointer) in
             //C:-- void erased_tuple_receiver(const int* values, const size_t n);
             erased_tuple_receiver(UnsafeRawPointer(tuplePointer).assumingMemoryBound(to: CInt.self), 4)
         }
-        //easy_make_colors_struct(const uint8_t* values, const size_t n)
     }
     
     
     //---------------------------------------------------------------------------------------
     //---------------------------------------------------------------------------------------
-    
-    //    let data = Data([0x71, 0x3d, 0x0a, 0xd7, 0xa3, 0x10, 0x45, 0x40])
-    //aligned data is data that NOT a slice. [0] is at a pointer that is at the 0 of a register/granularity section.
-    //https://developer.ibm.com/articles/pa-dalign/
-    //TODO: Need to check on load to see if it can safely handle slices.
-    //TODO: Does Data ever provide a slice?
-    public func readNumericFrom<N:Numeric>(alignedData:Data, as numericType:N.Type) -> N {
-        //Compound types should use stride?
-        precondition(alignedData.count == MemoryLayout<N>.size) //Could determine type switch on data count with error.
-        return alignedData.withUnsafeBytes {
-            $0.load(as: N.self)
-        }
-    }
-    
-    public func readNumericFrom<N:Numeric>(correctCountData data:Data, as numericType:N.Type) -> N {
-        //Compound types should use stride?
-        precondition(data.count == MemoryLayout<N>.size) //Could determine type switch on data count with error.
-        var newValue:N = 0
-        let copiedCount = withUnsafeMutableBytes(of: &newValue, { data.copyBytes(to: $0)} )
-        precondition(copiedCount == MemoryLayout.size(ofValue: newValue))
-        return newValue
-    }
-    
-    //What happens if data is longer? This is what the video shows. Is it this easy?
-    public func readNumeric<N:Numeric>(from data:Data, at offset:Int = 0, as:N.Type) -> N {
-        data.withUnsafeBytes { (buffer: UnsafeRawBufferPointer) in
-            //buffer.load(as: T.Type)
-            buffer.load(fromByteOffset: offset, as: N.self)
-        }
-    }
-    
 
-    
-    
-    
-    
-    
-    
-    
-    //CColor is a UNION defined in c code
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    /// ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ///  ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ///   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    //TODO: Improve this function to get from 4byte data and a [UInt8].count % 4 == 0 array.
-    
-    
-    func readUInt32(from data:Data, at offset:Int) -> UInt32 {
-        data.withUnsafeBytes { (buffer: UnsafeRawBufferPointer) in
-            //buffer.load(as: T.Type)
-            buffer.load(fromByteOffset: offset, as: UInt32.self)
-        }
-    }
-    
-    
-    
     
     
     //MARK: Strings
@@ -562,16 +482,6 @@ public struct RandomProvider {
             return buffer.count - 1
         }
     }
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
 
 }
 

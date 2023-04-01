@@ -5,44 +5,46 @@
 //  Created by Carlyn Maw on 3/31/23.
 //
 
+// Swift treats C fixed-size arrays as Tuples.
+// Here is a way to store the tuple as an Array and, if needed
+// turn it back again.
+
+// ONLY FOR USE WITH HOMOGENEOUS TUPLES!!!
+
+// This Code is experimental. It all "works", but mostly for use as reference.
+
+
 import Foundation
 import UWCSamplerC
-
-
-//ONLY FO USE WITH HOMOGENEOUS TUPLES!!!
-
-//This Code is experimental and has not been tested.
 
 
 public struct TupleBridgeArrayBased<N:Numeric> {
     let size:Int
     let values:[N]
     
-    public init(array:[N]) {
-        if N.self != CInt.self {
-            
-            fatalError("Example code requires CInt")
-            
+    /// usage:
+    ///    `public func fetchBaseBufferRGBA() -> [UInt32] {
+    ///    `    fetchFixedSizeCArray(source: random_provider_RGBA_array, boundToType: UInt32.self)
+    ///    `}
+    static func fetchFixedSizeCArray<T, R>(source:T, boundToType:R.Type) -> [R] {
+        withUnsafeBytes(of: source) { (rawPointer) -> [R] in
+            let bufferPointer = rawPointer.assumingMemoryBound(to: boundToType)
+            return [R](bufferPointer)
         }
+    }
+    
+    public init(array:[N]) {
         self.values = array
         self.size = values.count
     }
     
     public init<U>(tuple: U, count:Int, type:N.Type) {
-        if N.self != CInt.self {
-            
-            fatalError("Example code requires CInt")
-            
-        }
         precondition(MemoryLayout.size(ofValue: tuple) == MemoryLayout<N>.stride * count)
         var tmp:[N] = []
         withUnsafePointer(to: tuple) { tuplePtr in
             tuplePtr.withMemoryRebound(to: N.self, capacity: count) { reboundTuplePtr in
                 let bufferPointer = UnsafeBufferPointer<N>(start:reboundTuplePtr, count: count)
                 tmp.append(contentsOf: bufferPointer)
-                //                for i in stride(from: bufferPointer.startIndex, to: bufferPointer.endIndex, by: 1) {
-                //                    tmp.append(bufferPointer[i])
-                //                }
             }
         }
         
@@ -60,37 +62,39 @@ public struct TupleBridgeArrayBased<N:Numeric> {
         precondition(MemoryLayout.size(ofValue: tuple) == MemoryLayout<N>.stride * count)
         
         withUnsafeMutablePointer(to: &tuple) { tuplePointer in
+            precondition(Int(bitPattern: tuplePointer).isMultiple(of: MemoryLayout<N>.alignment))
             tuplePointer.withMemoryRebound(to: N.self, capacity: size) { reboundPointer in
                 let bufferPointer = UnsafeMutableBufferPointer(start: UnsafeMutablePointer(reboundPointer), count: count)
                 //precondition(count * MemoryLayout<N>.stride == rawBytes.count)
-                //precondition(Int(bitPattern: rawBytes.baseAddress).isMultiple(of: MemoryLayout<N>.alignment))
+                
                 for i in stride(from: bufferPointer.startIndex, to: bufferPointer.endIndex, by: 1) {
                     bufferPointer[i] = values[i]
                 }
-//              for (index, value) in values.enumerated() {
-//                  bufferPointer[index] = value
-//              }
+                //              for (index, value) in values.enumerated() {
+                //                  bufferPointer[index] = value
+                //              }
             }
             
         }
     }
     
+    //YOLO.
     public func memCopyToTuple<U>(tuple: inout U, count:Int, type:N.Type) {
         precondition(count == self.size)
         precondition(type == N.self)
         precondition(MemoryLayout.size(ofValue: tuple) == MemoryLayout<N>.stride * count)
+        precondition(MemoryLayout.size(ofValue: tuple) == MemoryLayout<N>.stride * size)
+        //precondition(MemoryLayout.size(ofValue: tuple) == MemoryLayout.size(ofValue: values)) <-- This fails. Hmmmm...
         withUnsafeMutablePointer(to: &tuple) { tuplePointer in
-            
+            precondition(Int(bitPattern: tuplePointer).isMultiple(of: MemoryLayout<N>.alignment))
             let _ = values.withUnsafeBufferPointer { bufferPointer in
-                //Function that takes a type N.self in this example. a CInt
-                //C:-- void erased_tuple_receiver(const int* values, const size_t n);
-                memcpy(tuplePointer, bufferPointer.baseAddress, size)
+                memcpy(tuplePointer, bufferPointer.baseAddress, count * MemoryLayout<N>.stride)
             }
             
         }
     }
 }
-    
+
 extension TupleBridgeArrayBased where N == CInt {
     public func erasedForCExample() {
         values.withUnsafeBufferPointer { bufferPointer in
@@ -101,19 +105,5 @@ extension TupleBridgeArrayBased where N == CInt {
         }
     }
 }
-    
-//    //Saw this code but its TERRIBLE how do you know tuple is the right size??
-//    func bindArrayToTuple<T, U>(array: Array<T>, tuple: inout U) {
-//        //precondition(array.count == Mirror(reflecting: tuple).children.count)
-//        withUnsafeMutablePointer(to: &tuple) {
-//            $0.withMemoryRebound(to: T.self, capacity: array.count) {
-//                let ptr = UnsafeMutableBufferPointer<T>(start: $0, count: array.count)
-//                for (index, value) in array.enumerated() {
-//                    ptr[index] = value
-//                }
-//            }
-//        }
-//    }
-    
 
 

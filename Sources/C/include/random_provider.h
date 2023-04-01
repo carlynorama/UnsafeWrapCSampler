@@ -107,15 +107,13 @@ void acknowledge_uint32_buffer(const uint32_t* array, const size_t n);
 void acknowledge_uint8_buffer(const uint8_t* array, const size_t n);
 
 
-//-------------------------------------------------------------------
-//-------------------------------------------------------------------
+//------------------------------------------------- used in MiscHandy
 void erased_tuple_receiver(const int* values, const size_t n);
 void erased_struct_member_receiver(const int* value_ptr);
 //-------------------------------------------------------------------
-//-------------------------------------------------------------------
 
 
-//
+//----------------------------------------------  used in BridgeColor
 //------------------------------------- working with incomplete types
 //incomplete struct definitions / Opaque Types like these are imported
 //as OpaquePointers. See BridgeColor example for ways to handle that.

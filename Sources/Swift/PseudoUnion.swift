@@ -4,6 +4,7 @@
 //
 //  Created by Carlyn Maw on 3/30/23.
 //  Experiment on how to implement a Union in Swift.
+//  Should work similarly to CColorRGBA
 
 
 import Foundation

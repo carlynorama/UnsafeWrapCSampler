@@ -158,12 +158,12 @@ public struct RandomProvider {
     }
     
     //See notes in fuzzBuffer function.
-    let base_buffer:[UInt8] = [ 0x33, 0x33, 0x33, 0x66, 0x66, 0x66, 0x99, 0x99, 0x99,
+    public let base_buffer:[UInt8] = [ 0x33, 0x33, 0x33, 0x66, 0x66, 0x66, 0x99, 0x99, 0x99,
                                 0xCC, 0xCC, 0xCC, 0xEE, 0xEE, 0xEE, 0xEE, 0x00, 0x00,
                                 0x00, 0xEE, 0x00, 0x00, 0xEE, 0x00, 0x11, 0x11, 0x11 ]
     
     
-    public func fuzzBuffer() -> [UInt8] {
+    public func fuzzedBaseBuffer(fuzzAmount:UInt8) -> [UInt8] {
         
         //NOTE: Since acknowledge_uint8_buffer takes a defined type, Swift brings in the C function as a UnsafePointer, which can be used with a let.
         //S:-- acknowledge_uint8_buffer(UnsafePointer<UInt8>!, Int)
@@ -189,7 +189,7 @@ public struct RandomProvider {
         
         //S:-- fuzz_buffer(settings: UnsafeMutablePointer<Int32>!, settings_count: u_int, width_ptr: UnsafePointer<Int>!, height_ptr: UnsafePointer<Int>!, bytes_per_pixel: Int, calculated_size_ptr: UnsafeMutablePointer<Int>!, input_buffer: UnsafeRawPointer!, output_buffer: UnsafeMutableRawPointer!)
         //C:-- int fuzz_buffer(int* settings,u_int settings_count,const size_t* width_ptr,const size_t* height_ptr,size_t bytes_per_pixel,size_t* calculated_size_ptr,const void* input_buffer,void* output_buffer);
-        fuzz_buffer(&settings, CUnsignedInt(settings.count), &width, &height, bytes_per_pixel, &sizeResult, &m_base_buffer, &outputBuffer)
+        fuzz_buffer(&settings, CUnsignedInt(settings.count), &width, &height, bytes_per_pixel, &sizeResult, fuzzAmount, &m_base_buffer, &outputBuffer)
         //fuzz_buffer uses `unsigned char char_whiffle(const unsigned char* byte, const unsigned char wiffle)` to add a ±random amount to each char in the buffer.
         
         //This function DID take a let, because a typed array-pointer, which is different than

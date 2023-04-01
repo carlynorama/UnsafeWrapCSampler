@@ -93,11 +93,11 @@ void random_number_in_range_with_result_pointer(const int min, const int max, in
 }
 
 int random_number_in_range(const int* min, const int* max) {
-    return min + (rand() % (*max-*min));
+    return *min + (rand() % (*max-*min));
 }
 
 int random_number_base_plus_delta(const int* min, const int* max_delta) {
-    return min + (rand() % (*max_delta));
+    return *min + (rand() % (*max_delta));
 }
 
 
@@ -169,9 +169,10 @@ int fuzz_buffer(int* settings,
                    const size_t* height_ptr,
                    size_t bytes_per_pixel,
                    size_t* calculated_size_ptr,
+                   uint8_t fuzz_amount,
                    const void* input_buffer,
                    void* output_buffer
-                   ) {
+                ) {
     
     for (size_t i = 0; i < settings_count; i ++) {
         printf("fake update setting no: %d\n", settings[i]);
@@ -187,7 +188,7 @@ int fuzz_buffer(int* settings,
         //((char*)output_buffer)[p] = ((unsigned char*)input_buffer)[p] + 2;
         //unsigned char test = 100;
         //((unsigned char*)output_buffer)[p] = char_whiffle(&test, 5);
-        ((unsigned char*)output_buffer)[p] = char_whiffle(&((unsigned char*)input_buffer)[p], 20);
+        ((unsigned char*)output_buffer)[p] = char_whiffle(&((unsigned char*)input_buffer)[p], fuzz_amount);
         
     }
     printf("\nOUTPUT\n");
@@ -211,6 +212,7 @@ void call_buffer_process_test() {
                                 &height,
                                 bytes_per_pixel,
                                 &size_result,
+                                5,
                                 random_provider_uint8_array,
                                 output_buffer
                                 );

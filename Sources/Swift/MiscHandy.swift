@@ -9,7 +9,8 @@ import Foundation
 import UWCSamplerC
 
 
-struct MiscHandy {
+public struct MiscHandy {
+    public init() {}
     
     //MARK: Retrieving Fixed Size Arrays of Known Types
     

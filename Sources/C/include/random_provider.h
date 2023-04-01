@@ -37,9 +37,10 @@ int fuzz_buffer(int* settings,
                    const size_t* height_ptr,
                    size_t bytes_per_pixel,
                    size_t* calculated_size_ptr,
+                   uint8_t fuzz_amount,
                    const void* input_buffer,
                    void* output_buffer
-                   );
+                );
 
 
 //------------------------------------------- retrieving fixed arrays

@@ -79,14 +79,15 @@ public struct TupleBridgeArrayBased<N:Numeric> {
         precondition(count == self.size)
         precondition(type == N.self)
         precondition(MemoryLayout.size(ofValue: tuple) == MemoryLayout<N>.stride * count)
-        
-        values.withUnsafeBufferPointer { bufferPointer in
-            //Function that takes a type N.self in this example. a CInt
-            //C:-- void erased_tuple_receiver(const int* values, const size_t n);
-            memcpy(<#T##__dst: UnsafeMutableRawPointer!##UnsafeMutableRawPointer!#>, <#T##__src: UnsafeRawPointer!##UnsafeRawPointer!#>, <#T##__n: Int##Int#>)
+        withUnsafeMutablePointer(to: &tuple) { tuplePointer in
+            
+            let _ = values.withUnsafeBufferPointer { bufferPointer in
+                //Function that takes a type N.self in this example. a CInt
+                //C:-- void erased_tuple_receiver(const int* values, const size_t n);
+                memcpy(tuplePointer, bufferPointer.baseAddress, size)
+            }
             
         }
-        memcpy(tuple, , <#T##__n: Int##Int#>)
     }
 }
     

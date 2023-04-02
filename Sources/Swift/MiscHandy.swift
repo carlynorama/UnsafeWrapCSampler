@@ -113,8 +113,13 @@ public struct MiscHandy {
     
 
     
-    public func loadAsUInt8GetAsUInt32() {
-        
+
+
+    
+    //MARK: Load From Data
+    
+    //This function is needlessly low level for most cases. Better to use the .load function inside of closures like below. Leave this here as a reference for when absolutely need it.
+    func loadAsUInt8UseAsUInt32() {
         let uint8Pointer = UnsafeMutablePointer<UInt8>.allocate(capacity: 16)
         uint8Pointer.initialize(repeating: 127, count: 16)
         let uint32Pointer = UnsafeMutableRawPointer(uint8Pointer).bindMemory(to: UInt32.self, capacity: 4)
@@ -123,12 +128,10 @@ public struct MiscHandy {
         uint32Pointer.deallocate()
     }
     //also withMemoryRebound, .load better choices
-
     
-    //MARK: Load From Data
-    
-    //Requires aligned data.
-    //aligned data is data where [0] is at a pointer that is at the 0 of a register/granularity section.
+    //---------------
+    //Functions require aligned data unless specified.
+    //aligned data is data where byte[0] of the desired type is being cheated from a pointer with a value that matches the granularity of that type. Eg. if start pointer is &data[0] + offset, then offset % MemoryLayout<T>.stride must == 0
     //https://developer.ibm.com/articles/pa-dalign/
     
     //Note checks one could add:
@@ -195,6 +198,8 @@ public struct MiscHandy {
 //        precondition(copiedCount == MemoryLayout.size(ofValue: newValue))
 //        return newValue
 //    }
+    
+    //MARK: Working With Structs
     
     //Safer than calculatedPointerToStructItem
     public func conveniencePointerToStructItem() {

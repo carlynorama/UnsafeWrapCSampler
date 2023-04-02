@@ -33,7 +33,7 @@ public struct MiscHandy {
         }
     }
 
-    //TODO: Test
+    //TODO: Test non-numerics
     func loadFixedSizeCArray<T, R>(source:T, ofType:R.Type) -> [R]? {
         withUnsafeBytes(of: source) { (rawPointer) -> [R]? in
             rawPointer.baseAddress?.load(as: [R].self)
@@ -42,7 +42,8 @@ public struct MiscHandy {
         }
     }
     
-    //MARK: Misc
+    //TODO: Actual example.
+    //Make a rawBuffer to hand of to C that lasts just for the duration of the function.
     func rawBufferWork<T>(count:Int, initializer:T) {
         let rawPointer = UnsafeMutableRawPointer.allocate(byteCount: MemoryLayout<T>.stride * count, alignment: MemoryLayout<T>.alignment)
         let tPtr = rawPointer.initializeMemory(as: T.self, repeating: initializer, count: count)
@@ -51,33 +52,57 @@ public struct MiscHandy {
         rawPointer.deallocate()
     }
     
-    func exampleAssembler<Header>(header:Header, data:[Int32]) {
+    //Make a rawBuffer to hand of to C that lasts just for the duration of the function.
+    public func exampleAssembler<Header, DataType:Numeric>(header:Header, data:[DataType]) {
         let offset = MemoryLayout<Header>.stride
-        let byteCount = offset + MemoryLayout<Int32>.stride * data.count
-        assert(MemoryLayout<Header>.alignment >= MemoryLayout<Int32>.alignment)
-        let bufferPointer = UnsafeMutableRawPointer.allocate(
-            byteCount: byteCount, alignment: MemoryLayout<Header>.alignment)
-        let headerPointer = bufferPointer.initializeMemory(as: Header.self, repeating: header, count: 1)
-        //TODO: how to init with contents of data
-        let elementPointer = (bufferPointer + offset).initializeMemory(as: Int32.self, repeating: 0, count: data.count)
         
-        //DO SOMETHING
+        let byteCount = offset + MemoryLayout<DataType>.stride * data.count
+        print("offset:\(offset), dataCount:\(data.count), dataTypeStride:\(MemoryLayout<DataType>.stride),  byteCount:\(byteCount)")
+        assert(MemoryLayout<Header>.alignment >= MemoryLayout<DataType>.alignment)
+        
+        let rawPointer = UnsafeMutableRawPointer.allocate(
+            byteCount: byteCount, alignment: MemoryLayout<Header>.alignment)
+        let headerPointer = rawPointer.initializeMemory(as: Header.self, repeating: header, count: 1)
+        //TODO: how to init with contents of data
+        
+        let elementPointer = (rawPointer + offset).initializeMemory(as: DataType.self, repeating: 0, count: data.count)
+        
+        data.withUnsafeBufferPointer { sourcePointer in
+            elementPointer.assign(from: sourcePointer.baseAddress!, count: sourcePointer.count)
+        }
+        print("raw:\(rawPointer)")
+        print("header:\(headerPointer)")
+        print("element:\(elementPointer)")
+        
+        
+        //---------------  DO Something
+//        let bufferPointer = UnsafeRawBufferPointer(start: rawPointer, count: byteCount)
+//
+//        print(bufferPointer)
+        
+        // cant just return Data(bytes: rawPointer, count: byteCount) because must deallocate before leaving.
+        let tmp = Data(bytes: rawPointer, count: byteCount)
+        
+        for dataByte in tmp {
+            print(dataByte, terminator: ", ")
+        }
+        print()
+        
+        //--------------- END DO Something
         
         elementPointer.deinitialize(count: data.count)
         headerPointer.deinitialize(count: 1)
-        bufferPointer.deallocate()
+        rawPointer.deallocate()
+        
+
+        //--------------- IF NEEDED: return tmp
     }
     
-    func precessData<T>(data:Data, as type:T.Type) {
-        let result = data.withUnsafeBytes { buffer -> T in
-            //let rawPointer = UnsafeRawPointer(buffer.baseAddress!)
-            //rawPointer.load(fromByteOffset: MemoryLayout<T>.stride, as: type)
-            return buffer.load(as: type)
-        }
-        print(result)
-    }
     
-    //ONLY works for tuples because homogeneous
+
+    
+    //ONLY works for tuples that are homogeneous
+    //See also TupleBridge
     public func tupleEraser() {
         let tuple:(CInt, CInt, CInt) = (0, 1, 2)
         withUnsafePointer(to: tuple) { (tuplePointer: UnsafePointer<(CInt, CInt, CInt)>) in
@@ -86,7 +111,92 @@ public struct MiscHandy {
         }
     }
     
-    //Safer
+
+    
+    public func loadAsUInt8GetAsUInt32() {
+        
+        let uint8Pointer = UnsafeMutablePointer<UInt8>.allocate(capacity: 16)
+        uint8Pointer.initialize(repeating: 127, count: 16)
+        let uint32Pointer = UnsafeMutableRawPointer(uint8Pointer).bindMemory(to: UInt32.self, capacity: 4)
+        //DO NOT TOUCH uint8Pointer ever again. Not for use if thing would exist outside of function
+        // pass to something that needs 32
+        uint32Pointer.deallocate()
+    }
+    //also withMemoryRebound, .load better choices
+
+    
+    //MARK: Load From Data
+    
+    //Requires aligned data.
+    //aligned data is data where [0] is at a pointer that is at the 0 of a register/granularity section.
+    //https://developer.ibm.com/articles/pa-dalign/
+    
+    //Note checks one could add:
+    //precondition(data.count == MemoryLayout<N>.stride)
+    //precondition(offset % MemoryLayout<T>.stride == 0)
+    
+    public func processData<T>(data:Data, as type:T.Type) -> T {
+        let result = data.withUnsafeBytes { (buffer: UnsafeRawBufferPointer) -> T in
+            return buffer.load(as: type)
+        }
+        print(result)
+        return result
+    }
+    
+    //
+    //offset needs to be  offset % MemoryLayout<T>.stride == 0
+    public func processData2<T>(data:Data, as type:T.Type, offsetBy offset:Int = 0) -> T {
+        //precondition(offset % MemoryLayout<T>.stride == 0)
+        let result = data.withUnsafeBytes { buffer -> T in
+            return buffer.load(fromByteOffset: offset, as: T.self)
+        }
+        print(result)
+        return result
+    }
+    
+    public func processUnalignedData<T>(data:Data, as type:T.Type, offsetBy offset:Int = 0) -> T {
+        let result = data.withUnsafeBytes { buffer -> T in
+            return buffer.loadUnaligned(fromByteOffset: offset, as: T.self)
+        }
+        print(result)
+        return result
+    }
+    
+    public func processDataIntoArray<T>(data:Data, as type:T.Type, count:Int) -> [T] {
+        precondition(data.count == MemoryLayout<T>.stride * count)
+        let result = data.withUnsafeBytes { buffer -> [T] in
+            var values:[T] = []
+            for i in (0..<count) {
+                values.append(buffer.load(fromByteOffset: MemoryLayout<T>.stride * i, as: T.self))
+            }
+            return values
+        }
+        return result
+    }
+    
+    public func processUnalignedDataIntoArray<T>(data:Data, as type:T.Type, byOffset offset:Int, count:Int) -> [T] {
+        precondition((data.count - offset) > (MemoryLayout<T>.stride * count))
+        let result = data.withUnsafeBytes { buffer -> [T] in
+            var values:[T] = []
+            for i in (0..<count) {
+                values.append(buffer.loadUnaligned(fromByteOffset: offset + (MemoryLayout<T>.stride * i), as: T.self))
+            }
+            return values
+        }
+        return result
+    }
+    
+//  Shove 'em in.
+//    public func readNumericFrom<N:Numeric>(correctCountData data:Data, as numericType:N.Type) -> N {
+//        //Non numerics should really use stride.
+//        precondition(data.count == MemoryLayout<N>.size) //Could determine type switch on data count with error.
+//        var newValue:N = 0
+//        let copiedCount = withUnsafeMutableBytes(of: &newValue, { data.copyBytes(to: $0)} )
+//        precondition(copiedCount == MemoryLayout.size(ofValue: newValue))
+//        return newValue
+//    }
+    
+    //Safer than calculatedPointerToStructItem
     public func conveniencePointerToStructItem() {
         let example = ExampleStruct()
         withUnsafePointer(to: example.myString) { ptr_to_string in
@@ -103,59 +213,6 @@ public struct MiscHandy {
             erased_struct_member_receiver(rawPointer.assumingMemoryBound(to: CInt.self))
         }
     }
-    
-    public func loadAsUInt8GetAsUInt32() {
-        
-        let uint8Pointer = UnsafeMutablePointer<UInt8>.allocate(capacity: 16)
-        uint8Pointer.initialize(repeating: 127, count: 16)
-        let uint32Pointer = UnsafeMutableRawPointer(uint8Pointer).bindMemory(to: UInt32.self, capacity: 4)
-        //DO NOT TOUCH uint8Pointer ever again. Not for use if thing would exist outside of function
-        // pass to something that needs 32
-        uint32Pointer.deallocate()
-    }
-    //also withMemoryRebound, .load better choices
-
-    
-    //MARK: Load From Data
-    //    let data = Data([0x71, 0x3d, 0x0a, 0xd7, 0xa3, 0x10, 0x45, 0x40])
-    //aligned data is data that NOT a slice. [0] is at a pointer that is at the 0 of a register/granularity section.
-    //https://developer.ibm.com/articles/pa-dalign/
-    //TODO: Need to check on load to see if it can safely handle slices.
-    //TODO: Does Data ever provide a slice?
-    public func readNumericFrom<N:Numeric>(alignedData:Data, as numericType:N.Type) -> N {
-        //Compound types should use stride?
-        precondition(alignedData.count == MemoryLayout<N>.size) //Could determine type switch on data count with error.
-        return alignedData.withUnsafeBytes {
-            $0.load(as: N.self)
-        }
-    }
-    
-    public func readNumericFrom<N:Numeric>(correctCountData data:Data, as numericType:N.Type) -> N {
-        //Compound types should use stride?
-        precondition(data.count == MemoryLayout<N>.size) //Could determine type switch on data count with error.
-        var newValue:N = 0
-        let copiedCount = withUnsafeMutableBytes(of: &newValue, { data.copyBytes(to: $0)} )
-        precondition(copiedCount == MemoryLayout.size(ofValue: newValue))
-        return newValue
-    }
-    
-    //What happens if data is longer? This is what the video shows. Is it this easy?
-    public func readNumeric<N:Numeric>(from data:Data, at offset:Int = 0, as:N.Type) -> N {
-        data.withUnsafeBytes { (buffer: UnsafeRawBufferPointer) in
-            //buffer.load(as: T.Type)
-            buffer.load(fromByteOffset: offset, as: N.self)
-        }
-    }
-    
-
-    public func readNumeric<N:Numeric>(from data:Data, at offset:Int = 0, asArrayOf:N.Type) -> [N] {
-        data.withUnsafeBytes { (buffer: UnsafeRawBufferPointer) in
-            //buffer.load(as: T.Type)
-            buffer.load(fromByteOffset: offset, as: [N].self)
-        }
-    }
-    
-    
     
 }
 

@@ -51,6 +51,8 @@ extension BridgeColor {
 }
 
 
+
+
 //Alternate approach for incomplete struct depending on needs.
 //class ColorBridge {
 //    private var _ptr: OpaquePointer
@@ -66,7 +68,7 @@ extension BridgeColor {
 //        delete_pointer_for_ccolor(_ptr)
 //    }
 //
-//    //C:-- uint8_t ccolor_get_red(COpaqueColor *c) { return c->red; }
+//    //C:-- uint8_t ccolor_get_red(COpaqueColor* c) { return c->red; }
 //    var red: UInt8 {
 //        get { return ccolor_get_red(_ptr)) }
 //    }

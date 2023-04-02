@@ -18,11 +18,11 @@ public struct MiscHandy {
         //"let array = random_provider_uint8_array" Returns tuple size of fixed size array.
         fetchFixedSizeCArray(source: random_provider_uint8_array, boundToType: UInt8.self)
     }
-
+    
     public func fetchBaseBufferRGBA() -> [UInt32] {
         fetchFixedSizeCArray(source: random_provider_RGBA_array, boundToType: UInt32.self)
     }
-
+    
     //Okay to use assumingMemoryBound here IF using type ACTUALLY bound to.
     //Else see UnsafeBufferView struct example using .loadBytes to recast read values without
     //changing underlying memory.
@@ -32,17 +32,17 @@ public struct MiscHandy {
             return [R](bufferPointer)
         }
     }
-
+    
     //TODO: Test non-numerics
     func loadFixedSizeCArray<T, R>(source:T, ofType:R.Type) -> [R]? {
         withUnsafeBytes(of: source) { (rawPointer) -> [R]? in
             rawPointer.baseAddress?.load(as: [R].self)
-//            let bufferPointer = rawPointer.assumingMemoryBound(to: boundToType)
-//            return [R](bufferPointer)
+            //            let bufferPointer = rawPointer.assumingMemoryBound(to: boundToType)
+            //            return [R](bufferPointer)
         }
     }
     
-
+    
     
     //MARK: Assember
     
@@ -74,7 +74,7 @@ public struct MiscHandy {
         //Start of header. In this case headerPointer.baseAddress == rawPointer.baseAddress,
         //But headerPointer is bound to Header type.
         let headerPointer = rawPointer.initializeMemory(as: Header.self, repeating: header, count: 1)
-
+        
         //Initialize region to take in data of proper DataType.
         //DataType:Numeric so I could use 0 but one could pass in an initializer.
         let elementPointer = (rawPointer + offset).initializeMemory(as: DataType.self, repeating: 0, count: data.count)
@@ -88,9 +88,9 @@ public struct MiscHandy {
         
         
         //---------------  DO Something
-//        let bufferPointer = UnsafeRawBufferPointer(start: rawPointer, count: byteCount)
-//
-//        print(bufferPointer)
+        //        let bufferPointer = UnsafeRawBufferPointer(start: rawPointer, count: byteCount)
+        //
+        //        print(bufferPointer)
         
         // cant just return Data(bytes: rawPointer, count: byteCount) because must deallocate before leaving.
         let tmp = Data(bytes: rawPointer, count: byteCount)
@@ -106,7 +106,7 @@ public struct MiscHandy {
         headerPointer.deinitialize(count: 1)
         rawPointer.deallocate()
         
-
+        
         //--------------- IF NEEDED: return tmp
     }
     
@@ -195,10 +195,6 @@ public struct MiscHandy {
         //Do something with uint32Pointer pointer...
         uint32Pointer.deallocate()
     }
-
-
-    
-
     
     //MARK: Working With Structs
     
@@ -222,9 +218,6 @@ public struct MiscHandy {
             erased_struct_member_receiver(rawPointer.assumingMemoryBound(to: CInt.self))
         }
     }
-    
-    
-
     
 }
 

@@ -159,8 +159,8 @@ public struct RandomProvider {
     
     //See notes in fuzzBuffer function.
     public let base_buffer:[UInt8] = [ 0x33, 0x33, 0x33, 0x66, 0x66, 0x66, 0x99, 0x99, 0x99,
-                                0xCC, 0xCC, 0xCC, 0xEE, 0xEE, 0xEE, 0xEE, 0x00, 0x00,
-                                0x00, 0xEE, 0x00, 0x00, 0xEE, 0x00, 0x11, 0x11, 0x11 ]
+                                       0xCC, 0xCC, 0xCC, 0xEE, 0xEE, 0xEE, 0xEE, 0x00, 0x00,
+                                       0x00, 0xEE, 0x00, 0x00, 0xEE, 0x00, 0x11, 0x11, 0x11 ]
     
     
     public func fuzzedBaseBuffer(fuzzAmount:UInt8) -> [UInt8] {
@@ -236,7 +236,8 @@ public struct RandomProvider {
     //TODO: Have not tested cPrintHexAnyArray with non numeric types.
     func cPrintHexAnyArray(_ array:[Any]) {
         print("opaque:")
-        var for_pointer = array //withUnsafeBufferPointer does not work in this case of passing to void*
+        //withUnsafeBufferPointer does not work in this case of passing to void*, need to make a var to make a implicit mutable pointer
+        var for_pointer = array
         //C:--  void print_opaque(const void* p, const size_t byte_count);
         print_opaque(&for_pointer, array.count)
     }
@@ -287,7 +288,7 @@ public struct RandomProvider {
             print(String(item.full, radix: 16, uppercase: true))
         }
     }
-
+    
     public func castingTests(theInt:UInt32, theColor:CColorRGBA) {
         //Nope.
         //let castItC = theInt as? CColorRGBA
@@ -313,7 +314,6 @@ public struct RandomProvider {
         }
         printCColorRGBA(tupleInit)
         
-
         let tupleInitLoadAs:CColorRGBA = withUnsafeBytes(of: theInt) { bytesPointer in
             return CColorRGBA(bytes: (bytesPointer.baseAddress?.load(as: (UInt8, UInt8, UInt8, UInt8).self)).unsafelyUnwrapped)
         }
@@ -338,7 +338,6 @@ public struct RandomProvider {
         printCColorRGBA(structInit)
         
     }
-
     
     //MARK: Crazy Int32 <-> tuple/CColor mechanisms. All less safe and more arcane than the .load(as)
     //---------------------------------------------------------------------------------------
@@ -403,7 +402,7 @@ public struct RandomProvider {
     func uint32ToCColorUsingRebound(_ sourceUInt32:UInt32)  -> CColorRGBA {
         let color = withUnsafePointer(to: sourceUInt32) { sourcePointer -> CColorRGBA in
             UnsafeMutableRawPointer(mutating: sourcePointer).withMemoryRebound(to: CColorRGBA.self, capacity: 1) { valuePointer in
-                 return valuePointer.pointee
+                return valuePointer.pointee
             }
         }
         return color
@@ -425,8 +424,6 @@ public struct RandomProvider {
     
     //---------------------------------------------------------------------------------------
     //---------------------------------------------------------------------------------------
-
-    
     
     //MARK: Strings
     
@@ -493,7 +490,7 @@ public struct RandomProvider {
             return buffer.count - 1
         }
     }
-
+    
 }
 
 

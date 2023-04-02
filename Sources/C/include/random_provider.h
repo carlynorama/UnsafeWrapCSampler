@@ -44,14 +44,14 @@ void add_random_to_all_capped(unsigned int* array, const size_t n, unsigned int 
 
 void call_buffer_process_test();
 int fuzz_buffer(int* settings,
-                   u_int settings_count,
-                   const size_t* width_ptr,
-                   const size_t* height_ptr,
-                   size_t bytes_per_pixel,
-                   size_t* calculated_size_ptr,
-                   uint8_t fuzz_amount,
-                   const void* input_buffer,
-                   void* output_buffer
+                u_int settings_count,
+                const size_t* width_ptr,
+                const size_t* height_ptr,
+                size_t bytes_per_pixel,
+                size_t* calculated_size_ptr,
+                uint8_t fuzz_amount,
+                const void* input_buffer,
+                void* output_buffer
                 );
 
 
@@ -76,27 +76,27 @@ void print_opaque(const void* p, const size_t byte_count);
 //i.e. they expect RED to be at byte[0], not byte[4]. Little Endian systems should implement
 //#AABBGGRR, but that is the opposite of how I'm used to writing hex colors, so yeah not gunna for this.
 union CColorRGBA {
-  uint32_t full;
-  uint8_t bytes[4];
-  struct {
+    uint32_t full;
+    uint8_t bytes[4];
+    struct {
+        uint8_t alpha;
+        uint8_t blue;
+        uint8_t green;
+        uint8_t red;
+    };
+};
+
+struct c_color_comp {
     uint8_t alpha;
     uint8_t blue;
     uint8_t green;
     uint8_t red;
-  };
-};
-
-struct c_color_comp {
-  uint8_t alpha;
-  uint8_t blue;
-  uint8_t green;
-  uint8_t red;
 };
 
 union CColorRGBA2 {
-  uint32_t full;
-  uint8_t bytes[4];
-  struct c_color_comp components;
+    uint32_t full;
+    uint8_t bytes[4];
+    struct c_color_comp components;
 };
 
 void random_colors_full_alpha(uint32_t* array, const size_t n);

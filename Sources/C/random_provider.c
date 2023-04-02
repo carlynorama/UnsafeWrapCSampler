@@ -43,28 +43,28 @@ struct COpaqueColor {
 //-------------------------------------------------------------------
 
 uint8_t random_provider_uint8_array[27] = { 0x33, 0x33, 0x33, 0x66, 0x66, 0x66, 0x99, 0x99, 0x99,
-                                             0xCC, 0xCC, 0xCC, 0xEE, 0xEE, 0xEE, 0xEE, 0x00, 0x00,
-                                             0x00, 0xEE, 0x00, 0x00, 0xEE, 0x00, 0x11, 0x11, 0x11
-                                          };
+    0xCC, 0xCC, 0xCC, 0xEE, 0xEE, 0xEE, 0xEE, 0x00, 0x00,
+    0x00, 0xEE, 0x00, 0x00, 0xEE, 0x00, 0x11, 0x11, 0x11
+};
 size_t width = 3;
 size_t height = 3;
 size_t bytes_per_pixel = 3;
 
 uint32_t random_provider_RGBA_array[9] = { 0x333333FF, 0x666666FF, 0x999999FF,
-                                    0xCCCCCCFF, 0xEEEEEEFF, 0xEE0000FF,
-                                    0x00EE00FF, 0x00EE00FF, 0x111111FF
-                                };
+    0xCCCCCCFF, 0xEEEEEEFF, 0xEE0000FF,
+    0x00EE00FF, 0x00EE00FF, 0x111111FF
+};
 
 
 
 const unsigned char valid_alpha[52] = { 0b01000001, 0b01000010, 0b01000011, 0b01000100, 0b01000101, 0b01000110, 0b01000111,
-                                        0b01001000, 0b01001001, 0b01001010, 0b01001011, 0b01001100, 0b01001101, 0b01001110,
-                                        0b01001111, 0b01010000, 0b01010001, 0b01010010, 0b01010011, 0b01010100, 0b01010101,
-                                        0b01010110, 0b01010111, 0b01011000, 0b01011001, 0b01011010,
-                                        0b01100001, 0b01100010, 0b01100011, 0b01100100, 0b01100101, 0b01100110, 0b01100111,
-                                        0b01101000, 0b01101001, 0b01101010, 0b01101011, 0b01101100, 0b01101101, 0b01101110,
-                                        0b01101111, 0b01110000, 0b01110001, 0b01110010, 0b01110011, 0b01110100, 0b01110101,
-                                        0b01110110, 0b01110111, 0b01111000, 0b01111001, 0b01111010 };
+    0b01001000, 0b01001001, 0b01001010, 0b01001011, 0b01001100, 0b01001101, 0b01001110,
+    0b01001111, 0b01010000, 0b01010001, 0b01010010, 0b01010011, 0b01010100, 0b01010101,
+    0b01010110, 0b01010111, 0b01011000, 0b01011001, 0b01011010,
+    0b01100001, 0b01100010, 0b01100011, 0b01100100, 0b01100101, 0b01100110, 0b01100111,
+    0b01101000, 0b01101001, 0b01101010, 0b01101011, 0b01101100, 0b01101101, 0b01101110,
+    0b01101111, 0b01110000, 0b01110001, 0b01110010, 0b01110011, 0b01110100, 0b01110101,
+    0b01110110, 0b01110111, 0b01111000, 0b01111001, 0b01111010 };
 
 //-------------------------------------------------------------------
 //MARK:  Setup
@@ -164,14 +164,14 @@ unsigned char char_whiffle(const unsigned char* byte, const unsigned char wiffle
 
 //trying to model sysctl example from video a bit more usefully.
 int fuzz_buffer(int* settings,
-                   u_int settings_count,
-                   const size_t* width_ptr,
-                   const size_t* height_ptr,
-                   size_t bytes_per_pixel,
-                   size_t* calculated_size_ptr,
-                   uint8_t fuzz_amount,
-                   const void* input_buffer,
-                   void* output_buffer
+                u_int settings_count,
+                const size_t* width_ptr,
+                const size_t* height_ptr,
+                size_t bytes_per_pixel,
+                size_t* calculated_size_ptr,
+                uint8_t fuzz_amount,
+                const void* input_buffer,
+                void* output_buffer
                 ) {
     
     for (size_t i = 0; i < settings_count; i ++) {
@@ -207,15 +207,15 @@ void call_buffer_process_test() {
     char* output_buffer = malloc(9 * bytes_per_pixel);
     printf("allocated size: %lu\n", 9 * bytes_per_pixel);
     int result = fuzz_buffer(settings,
-                                3,
-                                &width,
-                                &height,
-                                bytes_per_pixel,
-                                &size_result,
-                                5,
-                                random_provider_uint8_array,
-                                output_buffer
-                                );
+                             3,
+                             &width,
+                             &height,
+                             bytes_per_pixel,
+                             &size_result,
+                             5,
+                             random_provider_uint8_array,
+                             output_buffer
+                             );
     
     printf("\ncalculated size: %zu", size_result);
     free(settings);
@@ -249,11 +249,11 @@ void set_all_bits_low(void* array, const size_t n, const size_t type_size) {
 void set_all_bits_random(void* array, const size_t n, const size_t type_size) {
     uint8_t* cast = ((unsigned char *) array);
     //Finer grain control for reference.
-//    for (size_t item = 0; item < n; item ++) {
-//        for (size_t byte = 0; byte < type_size; byte++) {
-//            cast[byte + item*type_size] = rand() % 255;
-//        }
-//    }
+    //    for (size_t item = 0; item < n; item ++) {
+    //        for (size_t byte = 0; byte < type_size; byte++) {
+    //            cast[byte + item*type_size] = rand() % 255;
+    //        }
+    //    }
     for (size_t byte = 0; byte < type_size * n; byte++) {
         cast[byte] = rand() % 255;
     }
@@ -286,7 +286,7 @@ void answer_to_life(char* result) {
         sprintf(result, "The answer to life, the universe and everything is %d", rand());
         printf("result after assignment: %p, %s\n", result, result);
     }
-
+    
 }
 
 void build_concise_message(char* result, size_t* length) {
@@ -315,17 +315,17 @@ void random_scramble(const char* input, char* output, size_t* length) {
     //*length = strlen(input) + 1;
     
     //In this code the stride was off all of a sudden?
-//    if (output != NULL) {
-//        char* tmp[*length];
-//        tmp[*length-1] = 0;
-//        for (size_t i = 0; i < *length-1; i++) {
-//            tmp[i] = random_letter();
-//        }
-//        print_opaque(tmp, *length);
-//        sprintf(output, "%s", *tmp);
-//    } else {
-//        printf("length is:%zu\n", *length);
-//    }
+    //    if (output != NULL) {
+    //        char* tmp[*length];
+    //        tmp[*length-1] = 0;
+    //        for (size_t i = 0; i < *length-1; i++) {
+    //            tmp[i] = random_letter();
+    //        }
+    //        print_opaque(tmp, *length);
+    //        sprintf(output, "%s", *tmp);
+    //    } else {
+    //        printf("length is:%zu\n", *length);
+    //    }
 }
 
 

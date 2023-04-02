@@ -37,11 +37,11 @@ extension BridgeColor {
     }
     
     public func asUINT32FromPointerType() -> UInt32 {
-       withUnsafeBytes(of: self) { (buffer) -> UInt32 in
+        withUnsafeBytes(of: self) { (buffer) -> UInt32 in
             //C:-- int_from_opaque_color(OpaqueColor!)
             let tmp = int_from_opaque_color(OpaquePointer(buffer.baseAddress))
-           print(String(format: "%x", tmp))
-           return tmp
+            print(String(format: "%x", tmp))
+            return tmp
         }
     }
     
@@ -66,7 +66,7 @@ extension BridgeColor {
 
 public class ColorBridge {
     private var _ptr: OpaquePointer
-
+    
     //Really should force component initialization with init.
     public init() {
         //C:-- CColor* create_pointer_for_ccolor() { //has a malloc// }
@@ -80,14 +80,13 @@ public class ColorBridge {
         set_color_values(_ptr, red, green, blue, alpha)
         
     }
-
     
     deinit {
         //C:-- void delete_pointer_for_ccolor() { //has free// }
         //(see Note above.)
         delete_pointer_for_ccolor(_ptr)
     }
-
+    
     //C:-- uint8_t ccolor_get_red(COpaqueColor* c) { return c->red; }
     //In real implementation would also write setters.
     public var red: UInt8 {
@@ -103,7 +102,7 @@ public class ColorBridge {
     public var alpha: UInt8 {
         get { return ccolor_get_alpha(_ptr) }
     }
-
+    
 }
 
 

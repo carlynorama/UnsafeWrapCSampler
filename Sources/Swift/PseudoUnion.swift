@@ -1,5 +1,5 @@
 //
-//  PseodoUnion.swift
+//  PseudoUnion.swift
 //  
 //
 //  Created by Carlyn Maw on 3/30/23.

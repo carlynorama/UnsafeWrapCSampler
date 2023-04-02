@@ -4,8 +4,21 @@
 //
 //  Created by Carlyn Maw on 3/25/23.
 //
-// NOTE: A const in the function definition in the header file makes a
+// NOTE: A const in the function definition makes a
 // difference to the Swift Unsafe pointer type.
+//
+// I went a little overboard and const'd the values as well.
+// I have since confirmed that swift does NOT need that to pass
+// in let values after all. I have left them in b/c working code works.
+
+// More:
+// Modern C compilers are probably smart enough to not copy-on pass
+// but on change (TODO, check clang), so not sure that there is
+// performance/memory diff with const vs no const on function args
+// (promising to be safe) any more.
+
+// For more about const and its usage (C++ discussion)
+// https://isocpp.org/wiki/faq/const-correctness#overview-const
 //
 #ifndef random_provider_h
 #define random_provider_h
@@ -14,7 +27,6 @@
 
 //------------------------------------------------------- initializer
 void seed_random(unsigned int seed);
-
 
 //----------------------------------------------------- single values
 int random_int();

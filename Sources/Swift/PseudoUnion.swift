@@ -11,7 +11,7 @@ import Foundation
 
 
 public struct PseudoUnion {
-    var full: UInt32
+    public var full: UInt32
     
     //layout: 0xRRGGBBAA input leads to [0]AA, [1]BB, [2]GG, [3]RR
     
@@ -19,6 +19,8 @@ public struct PseudoUnion {
     let green_shift = 16
     let blue_shift = 8
     let alpha_shift = 0
+    
+    let green_index = 2; //for green set example
     
     public init(full: UInt32) {
         self.full = full
@@ -79,6 +81,7 @@ public struct PseudoUnion {
         }
     }
     
+    
     public var red:UInt8 {
         get {
             UInt8((full >> red_shift) & 0xFF)
@@ -98,9 +101,17 @@ public struct PseudoUnion {
             UInt8((full >> green_shift) & 0xFF)
         }
         set {
-            let mask:UInt32 = ~(0xFF << green_shift)
-            let tmp = full & mask
-            full = (UInt32(newValue) << green_shift) | tmp
+            //Old way
+//            let mask:UInt32 = ~(0xFF << green_shift)
+//            let tmp = full & mask
+//            full = (UInt32(newValue) << green_shift) | tmp
+            //The more swifty way?
+            let _ = withUnsafeMutablePointer(to:&full) { pointer in
+                let bufferPtr = UnsafeMutableRawBufferPointer(start: pointer, count: 4)
+                bufferPtr[green_index] = newValue
+            }
+            //TODO: Performance test / compiler compare.
+            //It looks like more hassle but maybe after it's compiled it's fewer instructions?
         }
     }
     
@@ -131,5 +142,33 @@ public struct PseudoUnion {
         print(bytes)
         print(String(format: "0x%08x", full))
     }
+    
+    
+    //@inline(__always) Not really going to gain me much here
+    //Compiler probably inlines this tiny function by default.
+    //Just want example of syntax.
+    //@inline(never) also works
+    //they clearly don't want you to use __always (has under score)
+    @inline(__always) func makeDouble(from component:UInt8) -> Double {
+        Double(component)/255.0
+    }
+    
+    public var d_red:Double {
+        makeDouble(from: red)
+    }
+    
+    public var d_green:Double {
+        makeDouble(from: green)
+    }
+    
+    public var d_blue:Double {
+        makeDouble(from: blue)
+    }
+    
+    public var d_alpha:Double {
+        makeDouble(from: alpha)
+    }
+    
+    
     
 }

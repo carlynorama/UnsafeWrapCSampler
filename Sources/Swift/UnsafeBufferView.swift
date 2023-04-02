@@ -5,7 +5,7 @@
 //  Created by Carlyn Maw on 3/29/23.
 //  Code from 25:52 of WWDC 2020 "Safely Manage Pointers in Swift."
 
-// In the subscript, using .load(fromByteOffset:as) prevents rebinding of memory for access. This struct can point to memory bound as a different type without overriding that.
+// In the subscript, using .load(fromByteOffset:as) prevents rebinding of memory for access. This struct can point to memory bound as a different type without overriding.
 
 import Foundation
 

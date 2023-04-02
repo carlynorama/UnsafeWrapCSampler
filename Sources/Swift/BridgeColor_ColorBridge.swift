@@ -1,11 +1,17 @@
 //
-//  BridgeColor.swift
+//  BridgeColor_ColorBridge.swift
 //  
 //
 //  Created by Carlyn Maw on 3/30/23.
-//  Example of how to make a wrapper to work with OpaquePointers
+//  Example of how to make wrappers to work with OpaquePointers
 //  Consequence of incomplete typedef / OpaqueTypes
-//  May not work for structs that are more complicated? 
+//  May not work for structs that are more complicated?
+
+// Two styles a struct (BridgeColor) and a class (ColorBridge)
+
+// With the struct, Swift owns the data, and we can use functions
+// written in C as long as we a re confident our Swift Struct shares
+// the memory layout of the C struct type (or more helper functions.. etc). The opaque pointer shouldn't be passed to C function that will save the pointer.
 
 import Foundation
 import UWCSamplerC
@@ -53,9 +59,10 @@ extension BridgeColor {
 }
 
 
-
-
-//Alternate approach for incomplete struct depending on needs.
+// With the class C owns the memory management. C Library must provide
+// pointer and a function to free it?
+// Note: If writing the C library implement a way to warn the Swift
+// if the C frees the pointer itself? If using existing make sure it won't.
 
 public class ColorBridge {
     private var _ptr: OpaquePointer
@@ -74,8 +81,10 @@ public class ColorBridge {
         
     }
 
-    //C:-- void delete_pointer_for_ccolor() { //has free// }
+    
     deinit {
+        //C:-- void delete_pointer_for_ccolor() { //has free// }
+        //(see Note above.)
         delete_pointer_for_ccolor(_ptr)
     }
 

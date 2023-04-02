@@ -18,7 +18,7 @@ import Foundation
 import UWCSamplerC
 
 
-public struct TupleBridgeArrayBased<N:Numeric> {
+public struct TupleBridge<N:Numeric> {
     let size:Int
     let values:[N]
     
@@ -95,7 +95,7 @@ public struct TupleBridgeArrayBased<N:Numeric> {
     }
 }
 
-extension TupleBridgeArrayBased where N == CInt {
+extension TupleBridge where N == CInt {
     public func erasedForCExample() {
         values.withUnsafeBufferPointer { bufferPointer in
             //Function that takes a type N.self in this example. a CInt

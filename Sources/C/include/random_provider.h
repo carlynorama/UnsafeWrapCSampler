@@ -126,10 +126,12 @@ void erased_struct_member_receiver(const int* value_ptr);
 //-------------------------------------------------------------------
 
 
-//----------------------------------------------  used in BridgeColor
 //------------------------------------- working with incomplete types
 //incomplete struct definitions / Opaque Types like these are imported
 //as OpaquePointers. See BridgeColor example for ways to handle that.
+
+//----------------------------------------------  used in BridgeColor
+
 typedef struct opaque_color* OpaqueColor;
 typedef struct COpaqueColor COpaqueColor; //<-tricky to work with
                                           //from Swift. If passed
@@ -139,6 +141,15 @@ typedef struct COpaqueColor COpaqueColor; //<-tricky to work with
 void test_opaque_color();
 uint32_t int_from_opaque_color(OpaqueColor color);
 uint32_t int_from_copaque_color_ptr(COpaqueColor* color);
+
+//----------------------------------------------  used in ColorBridge
+COpaqueColor* create_pointer_for_ccolor(); //{ //has a malloc// }
+void delete_pointer_for_ccolor(COpaqueColor* ptr); //{ //has free// }
+void set_color_values(COpaqueColor* c, uint8_t red, uint8_t green, uint8_t blue, uint8_t alpha);
+uint8_t ccolor_get_red(COpaqueColor* c);
+uint8_t ccolor_get_green(COpaqueColor* c);
+uint8_t ccolor_get_blue(COpaqueColor* c);
+uint8_t ccolor_get_alpha(COpaqueColor* c);
 
 
 //-------------------------------------------------------------------

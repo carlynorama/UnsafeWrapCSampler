@@ -11,10 +11,10 @@ import Foundation
 import UWCSamplerC
 
 public struct BridgeColor {
-    let alpha:UInt8
-    let blue:UInt8
-    let green:UInt8
-    let red:UInt8
+    public let alpha:UInt8
+    public let blue:UInt8
+    public let green:UInt8
+    public let red:UInt8
     
     public init(red: UInt8, green: UInt8, blue: UInt8, alpha: UInt8) {
         self.red = red
@@ -48,29 +48,56 @@ extension BridgeColor {
             return tmp
         }
     }
+    
+    
 }
 
 
 
 
 //Alternate approach for incomplete struct depending on needs.
-//class ColorBridge {
-//    private var _ptr: OpaquePointer
-//
-//    //C:-- CColor* create_pointer_for_ccolor() { //has a malloc// }
-//    init() {
-//        _ptr = create_pointer_for_ccolor()
-//        assert(_ptr, "Failed on create_pointer()")
-//    }
-//
-//    //C:-- CColor* delete_pointer_for_ccolor() { //has free// }
-//    deinit {
-//        delete_pointer_for_ccolor(_ptr)
-//    }
-//
-//    //C:-- uint8_t ccolor_get_red(COpaqueColor* c) { return c->red; }
-//    var red: UInt8 {
-//        get { return ccolor_get_red(_ptr)) }
-//    }
-//
-//}
+
+public class ColorBridge {
+    private var _ptr: OpaquePointer
+
+    //Really should force component initialization with init.
+    public init() {
+        //C:-- CColor* create_pointer_for_ccolor() { //has a malloc// }
+        _ptr = create_pointer_for_ccolor()
+        //assert(_ptr, "Failed on create_pointer()")
+    }
+    
+    
+    public func setColor(red:UInt8, green:UInt8, blue:UInt8, alpha:UInt8) {
+        //C:-- void set_color_values(COpaqueColor* c, uint8_t red, uint8_t green, uint8_t blue, uint8_t alpha)
+        set_color_values(_ptr, red, green, blue, alpha)
+        
+    }
+
+    //C:-- void delete_pointer_for_ccolor() { //has free// }
+    deinit {
+        delete_pointer_for_ccolor(_ptr)
+    }
+
+    //C:-- uint8_t ccolor_get_red(COpaqueColor* c) { return c->red; }
+    public var red: UInt8 {
+        get { return ccolor_get_red(_ptr) }
+    }
+    
+    public var green: UInt8 {
+        get { return ccolor_get_green(_ptr) }
+    }
+    public var blue: UInt8 {
+        get { return ccolor_get_blue(_ptr) }
+    }
+    public var alpha: UInt8 {
+        get { return ccolor_get_alpha(_ptr) }
+    }
+
+}
+
+
+//TODO: Go the other way?
+//let str0 = "boxcar" as CFString
+//let bits = Unmanaged.passUnretained(str0)
+//let ptr = bits.toOpaque()

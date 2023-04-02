@@ -149,6 +149,11 @@ public struct PseudoUnion {
     //Just want example of syntax.
     //@inline(never) also works
     //they clearly don't want you to use __always (has under score)
+    
+    //In a public func in a library, may want to consider @inlinable
+    //WITH CAUTION.
+    
+    //https://swiftrocks.com/understanding-inlinable-in-swift
     @inline(__always) func makeDouble(from component:UInt8) -> Double {
         Double(component)/255.0
     }
@@ -168,7 +173,5 @@ public struct PseudoUnion {
     public var d_alpha:Double {
         makeDouble(from: alpha)
     }
-    
-    
     
 }

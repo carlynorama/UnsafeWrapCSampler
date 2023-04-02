@@ -80,6 +80,7 @@ public class ColorBridge {
     }
 
     //C:-- uint8_t ccolor_get_red(COpaqueColor* c) { return c->red; }
+    //In real implementation would also write setters.
     public var red: UInt8 {
         get { return ccolor_get_red(_ptr) }
     }

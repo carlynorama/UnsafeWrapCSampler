@@ -121,8 +121,11 @@ void acknowledge_uint8_buffer(const uint8_t* array, const size_t n);
 
 
 //------------------------------------------------- used in MiscHandy
-void erased_tuple_receiver(const int* values, const size_t n);
 void erased_struct_member_receiver(const int* value_ptr);
+
+//----------------------------------------------- used in TupleBridge
+void erased_tuple_receiver(const int* values, const size_t n);
+
 //-------------------------------------------------------------------
 
 

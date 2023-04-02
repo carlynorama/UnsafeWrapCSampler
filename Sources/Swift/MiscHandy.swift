@@ -42,12 +42,19 @@ public struct MiscHandy {
         }
     }
     
-    //TODO: Actual example.
-    //Make a rawBuffer to hand of to C that lasts just for the duration of the function.
+
+    
+    //MARK: Assember
+    
+    //This function is the simpler case than the assembler, but the assembler uses this pattern
+    // of making a rawBuffer that lasts just for the duration of the function.
     func rawBufferWork<T>(count:Int, initializer:T) {
         let rawPointer = UnsafeMutableRawPointer.allocate(byteCount: MemoryLayout<T>.stride * count, alignment: MemoryLayout<T>.alignment)
         let tPtr = rawPointer.initializeMemory(as: T.self, repeating: initializer, count: count)
+        
         //Do something that needs a pointer bound to T
+        //to hand to C? Create a tmp variable to pass out after dealloc?
+        
         tPtr.deinitialize(count: count)
         rawPointer.deallocate()
     }
@@ -60,11 +67,16 @@ public struct MiscHandy {
         print("offset:\(offset), dataCount:\(data.count), dataTypeStride:\(MemoryLayout<DataType>.stride),  byteCount:\(byteCount)")
         assert(MemoryLayout<Header>.alignment >= MemoryLayout<DataType>.alignment)
         
+        //Start of whole message
         let rawPointer = UnsafeMutableRawPointer.allocate(
             byteCount: byteCount, alignment: MemoryLayout<Header>.alignment)
-        let headerPointer = rawPointer.initializeMemory(as: Header.self, repeating: header, count: 1)
-        //TODO: how to init with contents of data
         
+        //Start of header. In this case headerPointer.baseAddress == rawPointer.baseAddress,
+        //But headerPointer is bound to Header type.
+        let headerPointer = rawPointer.initializeMemory(as: Header.self, repeating: header, count: 1)
+
+        //Initialize region to take in data of proper DataType.
+        //DataType:Numeric so I could use 0 but one could pass in an initializer.
         let elementPointer = (rawPointer + offset).initializeMemory(as: DataType.self, repeating: 0, count: data.count)
         
         data.withUnsafeBufferPointer { sourcePointer in
@@ -99,35 +111,7 @@ public struct MiscHandy {
     }
     
     
-
-    
-    //ONLY works for tuples that are homogeneous
-    //See also TupleBridge
-    public func tupleEraser() {
-        let tuple:(CInt, CInt, CInt) = (0, 1, 2)
-        withUnsafePointer(to: tuple) { (tuplePointer: UnsafePointer<(CInt, CInt, CInt)>) in
-            //C:-- void erased_tuple_receiver(const int* values, const size_t n);
-            erased_tuple_receiver(UnsafeRawPointer(tuplePointer).assumingMemoryBound(to: CInt.self), 3)
-        }
-    }
-    
-
-    
-
-
-    
     //MARK: Load From Data
-    
-    //This function is needlessly low level for most cases. Better to use the .load function inside of closures like below. Leave this here as a reference for when absolutely need it.
-    func loadAsUInt8UseAsUInt32() {
-        let uint8Pointer = UnsafeMutablePointer<UInt8>.allocate(capacity: 16)
-        uint8Pointer.initialize(repeating: 127, count: 16)
-        let uint32Pointer = UnsafeMutableRawPointer(uint8Pointer).bindMemory(to: UInt32.self, capacity: 4)
-        //DO NOT TOUCH uint8Pointer ever again. Not for use if thing would exist outside of function
-        // pass to something that needs 32
-        uint32Pointer.deallocate()
-    }
-    //also withMemoryRebound, .load better choices
     
     //---------------
     //Functions require aligned data unless specified.
@@ -189,15 +173,32 @@ public struct MiscHandy {
         return result
     }
     
-//  Shove 'em in.
-//    public func readNumericFrom<N:Numeric>(correctCountData data:Data, as numericType:N.Type) -> N {
-//        //Non numerics should really use stride.
-//        precondition(data.count == MemoryLayout<N>.size) //Could determine type switch on data count with error.
-//        var newValue:N = 0
-//        let copiedCount = withUnsafeMutableBytes(of: &newValue, { data.copyBytes(to: $0)} )
-//        precondition(copiedCount == MemoryLayout.size(ofValue: newValue))
-//        return newValue
-//    }
+    //---- Special case solutions.
+    
+    //This function just shoves a copy of the bytes in.
+    func readNumericFrom<N:Numeric>(correctCountData data:Data, as numericType:N.Type) -> N {
+        //Non numerics should really use stride.
+        precondition(data.count == MemoryLayout<N>.size) //Could determine type switch on data count with error.
+        var newValue:N = 0
+        let copiedCount = withUnsafeMutableBytes(of: &newValue, { data.copyBytes(to: $0)} )
+        precondition(copiedCount == MemoryLayout.size(ofValue: newValue))
+        return newValue
+    }
+    
+    //This function is needlessly low level for most cases. Better to use the .load function inside of closures like below. Leave this here as a reference for when absolutely need it.
+    //withMemoryRebound, .load better choices
+    func loadAsUInt8UseAsUInt32() {
+        let uint8Pointer = UnsafeMutablePointer<UInt8>.allocate(capacity: 16)
+        uint8Pointer.initialize(repeating: 127, count: 16)
+        let uint32Pointer = UnsafeMutableRawPointer(uint8Pointer).bindMemory(to: UInt32.self, capacity: 4)
+        //DO NOT TOUCH uint8Pointer ever again. Not for use if thing would exist outside of function
+        //Do something with uint32Pointer pointer...
+        uint32Pointer.deallocate()
+    }
+
+
+    
+
     
     //MARK: Working With Structs
     
@@ -206,6 +207,8 @@ public struct MiscHandy {
         let example = ExampleStruct()
         withUnsafePointer(to: example.myString) { ptr_to_string in
             print(ptr_to_string)
+            //C:-- void print_message(const char* message)
+            print_message(ptr_to_string)
         }
     }
     
@@ -215,9 +218,13 @@ public struct MiscHandy {
         
         withUnsafePointer(to: example) { (ptr: UnsafePointer<ExampleStruct>) in
             let rawPointer = (UnsafeRawPointer(ptr) + MemoryLayout<ExampleStruct>.offset(of: \.myNumber)!)
+            //C:-- void erased_struct_member_receiver(const int* value_ptr)
             erased_struct_member_receiver(rawPointer.assumingMemoryBound(to: CInt.self))
         }
     }
+    
+    
+
     
 }
 
@@ -225,3 +232,5 @@ fileprivate struct ExampleStruct {
     let myNumber:CInt = 42
     let myString:String = "Hello"
 }
+
+

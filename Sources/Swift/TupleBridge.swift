@@ -4,19 +4,26 @@
 //
 //  Created by Carlyn Maw on 3/31/23.
 //
-
-// Swift treats C fixed-size arrays as Tuples.
-// Here is a way to store the tuple as an Array and, if needed
-// turn it back again.
-
-// ONLY FOR USE WITH HOMOGENEOUS TUPLES!!!
-
-// This Code is experimental. It all "works", but mostly for use as reference.
-
-
 import Foundation
 import UWCSamplerC
 
+
+// ONLY FOR USE WITH HOMOGENEOUS TUPLES!!!
+
+// Swift treats C fixed-size arrays as Tuples. This causes a number of snags. Including C functions not being able to receive them back in.
+
+
+// This function makes the Tuple passable as a C array back into C.  For See TupleBridge extension for version available to test.
+fileprivate func tupleEraser() {
+    let tuple:(CInt, CInt, CInt) = (0, 1, 2)
+    withUnsafePointer(to: tuple) { (tuplePointer: UnsafePointer<(CInt, CInt, CInt)>) in
+        //C:-- void erased_tuple_receiver(const int* values, const size_t n);
+        erased_tuple_receiver(UnsafeRawPointer(tuplePointer).assumingMemoryBound(to: CInt.self), 3)
+    }
+}
+
+
+// TupleBridge is experimental. It all "works", but mostly for use as reference.
 
 public struct TupleBridge<N:Numeric> {
     let size:Int

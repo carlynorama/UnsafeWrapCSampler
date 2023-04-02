@@ -380,6 +380,10 @@ void erased_struct_member_receiver(const int* value_ptr) {
     printf("I got a number: %d\n", *value_ptr);
 }
 
+//-------------------------------------------------------------------
+//MARK: For TupleBridge
+//-------------------------------------------------------------------
+
 void erased_tuple_receiver(const int* values, const size_t n) {
     for (size_t i = 0; i < n; i++) {
         printf("%d\t", values[i]);

@@ -21,7 +21,7 @@ public struct RandomProvider {
     public init(seed:CUnsignedLong? = nil) {
         //make a call to srand?
         if seed != nil {
-            //Why doesn't CUnsignedLong work here?
+            //Why doesn't CUnsignedLong work here? (b/c it isn't a long, head-smack)
             //C:-- void seed_random(unsigned int seed);
             seed_random(UInt32(seed.unsafelyUnwrapped)) //saves the check. Use only when code really needs speed.
         } else {

@@ -2,18 +2,30 @@
 
 Practice for using the Unsafe APIs to wrap C library. 
 
-The package file has a target for the C and the Swift package uses that as a dependency. 
+Uses Swift 5.7 and has only been compiled for MacOS 13, but there is no UI code in this repo so cross compatibility should be pretty high.
+
+The package file has two targets, a target for the C and one for the Swift. The Swift target uses the C target as a dependency. 
 
 For examples on how to use these functions in an actual application see the companion project [UnsafeExplorer](https://github.com/carlynorama/UnsafeExplorer). 
 
 This companion project never imports the C target, so it cannot use the functions directly. It is worth noting that it can recognize (but not create) the more complex C types that are fully defined in the header even without the import. (See [RandomColorsView](https://github.com/carlynorama/UnsafeExplorer/blob/main/UnsafeExplorer/SubViews/RandomColorsView.swift), testColorFunctions(), where c_color is allowed to exist as a CColorRGBA, but a new one cannot be created there. )
 
+## References
+
+The bulk of the repo's code was made by following along with the two WWDC videos and making examples
+
+- https://developer.apple.com/documentation/Swift/manual-memory-management
+- Unsafe Swift https://developer.apple.com/videos/play/wwdc2020/10648/
+- Safely manage pointers in Swift https://developer.apple.com/videos/play/wwdc2020/10167/
+- https://developer.apple.com/documentation/swift/using-imported-c-structs-and-unions-in-swift
+- https://developer.apple.com/documentation/swift/opaquepointer
+
 
 ## Using this Repo
 
-This repo is not designed to import into production code as much as to use as a reference.
+This repo is not designed to import into production code as much as to use as a reference. If you want to quickly get a sense of what it can do also down load the companion project mentioned above that has Views for each of the major concepts. 
 
-- First scan the `random.h` for the types of C function that the Swift examples bridge to. The header file is commented with the location of the Swift code that calls it. 
+- First scan the `random.h` for the types of C function that the Swift examples bridge to. The header file is commented with the location of the Swift code that calls it. The C functions were written to test the Swift code, not to demonstrate best practices in C. For example, `rand()` is not a great source for random numbers, there is very little error checking, some fairly sloppy typing (`int` when should be `uint` or `size_t`, unnecessary `void*`), lots of pointers where you wouldn't necessarily use one, etc. 
 
 - The bulk of the code is in `RandomProvider` which is divided into sections, each providing a different kind of random information from numbers, to arrays of numbers, to strings, to a C struct representing 32bit color information.
 
@@ -26,26 +38,6 @@ This repo is not designed to import into production code as much as to use as a 
 - `PseudoUnion` makes no C calls at all, but is an attempt to reproduce the behavior of the C union `CColorRGBA` using just Swift.
 
 - `UnsafeBufferView is lifted straight from 25:52 of WWDC 2020 "Safely Manage Pointers in Swift." (link in references)
-
-
-## References
-- https://developer.apple.com/documentation/Swift/manual-memory-management
-- Unsafe Swift https://developer.apple.com/videos/play/wwdc2020/10648/
-- Safely manage pointers in Swift https://developer.apple.com/videos/play/wwdc2020/10167/
-- https://developer.apple.com/documentation/swift/using-imported-c-structs-and-unions-in-swift
-- https://developer.apple.com/documentation/swift/opaquepointer
-
-
-## In this repo
-
-### C Code
-
-The basis of the package is a C library for working with random numbers. The C functions were written to test the Swift code, not to demonstrate best practices in C. For example, `rand()` is not a great source for random numbers, there is very little error checking, some fairly sloppy typing (`int` when should be `uint` or `size_t`, unnecessary `void*`), lots of pointers where you wouldn't necessarily use one, etc. 
-
-
-
-`random_provider.h` & `random_provider.c` are larger than they should be since ALL of the code is in them. Please s
-
 
 
 ## Swift Unsafe API names

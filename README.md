@@ -1,14 +1,31 @@
 # UnsafeWrapCSampler
 
-Practice for using the Unsafe APIs to wrap C library. For examples on how to use these functions in an actual application see the companion project [UnsafeExplorer](https://github.com/carlynorama/UnsafeExplorer). 
-
-This companion project never imports the C target, so it cannot use the functions directly. It is worth noting that it can recognize (but not create) the more complex C types that are fully defined in the header even without the import. (See [RandomColorsView](), testColorFunctions(), where c_color is allowed to exist as a CColorRGBA, but a new one cannot be created there. )
+Practice for using the Unsafe APIs to wrap C library. 
 
 The package file has a target for the C and the Swift package uses that as a dependency. 
 
-First scan the `random.h` for the types of C function the Swift examples bridge to. The header file is commented with the location of the Swift code that calls it. 
+For examples on how to use these functions in an actual application see the companion project [UnsafeExplorer](https://github.com/carlynorama/UnsafeExplorer). 
+
+This companion project never imports the C target, so it cannot use the functions directly. It is worth noting that it can recognize (but not create) the more complex C types that are fully defined in the header even without the import. (See [RandomColorsView](https://github.com/carlynorama/UnsafeExplorer/blob/main/UnsafeExplorer/SubViews/RandomColorsView.swift), testColorFunctions(), where c_color is allowed to exist as a CColorRGBA, but a new one cannot be created there. )
 
 
+## Using this Repo
+
+This repo is not designed to import into production code as much as to use as a reference.
+
+- First scan the `random.h` for the types of C function that the Swift examples bridge to. The header file is commented with the location of the Swift code that calls it. 
+
+- The bulk of the code is in `RandomProvider` which is divided into sections, each providing a different kind of random information from numbers, to arrays of numbers, to strings, to a C struct representing 32bit color information.
+
+- `BridgeColor_ColorBridge` contains two definitions: the struct BridgeColor, the class `ColorBridge`. These represent two different approaches for working with the OpaquePointers need to interface with C OpaqueTypes, e.g. `typedef struct COpaqueColor COpaqueColor;`
+
+- `MiscHandy` has examples of loading in `Data` to different types using `Unsafe` APIs. There are also a couple of examples to get pointers into complex `Structs`.  After the initial examples of how to fetch fixed arrays from C, there actually isn't much that uses C. But being able to work with Data/[UInt8] formats is important for interfacing with Non-Swift APIs.
+
+- `TupleBridge` contains some thoughts on how to deal with the fact that fixed length C arrays import into Swift as tuples by default. 
+
+- `PseudoUnion` makes no C calls at all, but is an attempt to reproduce the behavior of the C union `CColorRGBA` using just Swift.
+
+- `UnsafeBufferView is lifted straight from 25:52 of WWDC 2020 "Safely Manage Pointers in Swift." (link in references)
 
 
 ## References

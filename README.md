@@ -8,7 +8,7 @@ The package file has two targets, a target for the C and one for the Swift. The 
 
 For examples on how to use these functions in an actual application see the companion project [UnsafeExplorer](https://github.com/carlynorama/UnsafeExplorer). 
 
-This companion project never imports the C target, so it cannot use the functions directly. It is worth noting that it can recognize (but not create) the more complex C types that are fully defined in the header even without the import. (See [RandomColorsView](https://github.com/carlynorama/UnsafeExplorer/blob/main/UnsafeExplorer/SubViews/RandomColorsView.swift), testColorFunctions(), where c_color is allowed to exist as a CColorRGBA, but a new one cannot be created there. )
+This companion project never imports the C target, so it cannot call the C functions directly. It is worth noting that it can recognize (but not create) the more complex C types that are fully defined in the header even without the import. (See [RandomColorsView](https://github.com/carlynorama/UnsafeExplorer/blob/main/UnsafeExplorer/SubViews/RandomColorsView.swift), testColorFunctions(), where c_color is allowed to exist as a CColorRGBA, but a new one cannot be created there. )
 
 ## References
 

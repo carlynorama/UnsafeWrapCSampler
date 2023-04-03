@@ -321,8 +321,9 @@ public struct RandomProvider {
         
         let tupleInitMemcpy:CColorRGBA = CColorRGBA(bytes:uint32ToTuple_memcpy_yolo(theInt))
         printCColorRGBA(tupleInitMemcpy)
+
         
-        //---------- end using anon struct initializer ------------
+        //---------- using anon struct initializer
         //CColorRGBA(CColorRGBA.__Unnamed_struct___Anonymous_field2)
         let structInit = withUnsafeBytes(of: theInt) { bytesPointer in
             let structCast = bytesPointer.baseAddress?.load(as: CColorRGBA.__Unnamed_struct___Anonymous_field2.self)

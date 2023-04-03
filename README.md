@@ -1,8 +1,14 @@
 # UnsafeWrapCSampler
 
-Practice for using the Unsafe APIs to wrap C library.
+Practice for using the Unsafe APIs to wrap C library. For examples on how to use these functions in an actual application see the companion project [UnsafeExplorer](https://github.com/carlynorama/UnsafeExplorer). 
 
-The basis of the package is a C library for working with random numbers. The C functions were written to test the Swift code, not to demonstrate best practices in C. For example, `rand()` is not a great source for random numbers, there is very little error checking, some fairly sloppy typing (`int` when should be `uint` or `size_t`, unnecessary `void*`), lots of pointers where you wouldn't necessarily use one, etc. 
+This companion project never imports the C target, so it cannot use the functions directly. It is worth noting that it can recognize (but not create) the more complex C types that are fully defined in the header even without the import. (See [RandomColorsView](), testColorFunctions(), where c_color is allowed to exist as a CColorRGBA, but a new one cannot be created there. )
+
+The package file has a target for the C and the Swift package uses that as a dependency. 
+
+First scan the `random.h` for the types of C function the Swift examples bridge to. The header file is commented with the location of the Swift code that calls it. 
+
+
 
 
 ## References
@@ -11,6 +17,19 @@ The basis of the package is a C library for working with random numbers. The C f
 - Safely manage pointers in Swift https://developer.apple.com/videos/play/wwdc2020/10167/
 - https://developer.apple.com/documentation/swift/using-imported-c-structs-and-unions-in-swift
 - https://developer.apple.com/documentation/swift/opaquepointer
+
+
+## In this repo
+
+### C Code
+
+The basis of the package is a C library for working with random numbers. The C functions were written to test the Swift code, not to demonstrate best practices in C. For example, `rand()` is not a great source for random numbers, there is very little error checking, some fairly sloppy typing (`int` when should be `uint` or `size_t`, unnecessary `void*`), lots of pointers where you wouldn't necessarily use one, etc. 
+
+
+
+`random_provider.h` & `random_provider.c` are larger than they should be since ALL of the code is in them. Please s
+
+
 
 ## Swift Unsafe API names
 

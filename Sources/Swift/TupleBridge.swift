@@ -109,6 +109,7 @@ extension TupleBridge where N == CInt {
 
 
 //DISTRACTION: Get some insights into passing a Generic into a Generic
+
 //Works, here outside of TupleBridge, but have to specify type on TupleBridge?
 //Has nothing to do with type of return. That is the parameter.
 //func genericToGenericTest() {

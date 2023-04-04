@@ -204,13 +204,14 @@ public struct RandomProvider {
     //MARK: Void* Array Handling
     
     //All the C functions below take void* reference.
-    //TODO: MemoryLayout<R>.size (byte count) or MemoryLayout<R>.stride (byte count after packing) in these functions?
+    //MemoryLayout<R>.size (byte count) or MemoryLayout<R>.stride (byte count after packing) in these functions?
+    //Going to go with .stride for this case. It doesn't really matter for numeric types, but lets keep consistent.
     
     //Convenience Raw pointer.
     public func bufferSetHigh<R:Numeric>(count:Int, ofType:R.Type) -> [R] {
         var dataBuffer = Array<R>(repeating: 0, count: count)
         //C: void set_all_bits_high(void* array, const size_t n, const size_t type_size);
-        set_all_bits_high(&dataBuffer, count, MemoryLayout<R>.stride) //maybe should be .stride??
+        set_all_bits_high(&dataBuffer, count, MemoryLayout<R>.stride)
         return dataBuffer
     }
     
@@ -219,7 +220,7 @@ public struct RandomProvider {
         var dataBuffer = Array<R>(repeating: 0, count: count)
         dataBuffer.withUnsafeMutableBytes { bufferPointer in
             //C: void set_all_bits_low(void* array, const size_t n, const size_t type_size);
-            set_all_bits_low(bufferPointer.baseAddress, count, MemoryLayout<R>.stride) //maybe should be .stride??
+            set_all_bits_low(bufferPointer.baseAddress, count, MemoryLayout<R>.stride)
         }
         return dataBuffer
     }

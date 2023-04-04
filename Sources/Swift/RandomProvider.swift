@@ -233,13 +233,14 @@ public struct RandomProvider {
         }
     }
     
-    //TODO: Have not tested cPrintHexAnyArray with non numeric types.
-    func cPrintHexAnyArray(_ array:[Any]) {
+    //Had to replace [Any] with <T>([T])to calculate actual size of bytes, but worked.
+    public func cPrintHexAnyArray<T>(_ array:[T]) {
         print("opaque:")
         //withUnsafeBufferPointer does not work in this case of passing to void*, need to make a var to make a implicit mutable pointer
         var for_pointer = array
         //C:--  void print_opaque(const void* p, const size_t byte_count);
-        print_opaque(&for_pointer, array.count)
+        
+        print_opaque(&for_pointer, MemoryLayout<T>.stride * array.count ) //<- in this case, size okay?
     }
     
     //MARK: CColorRGBA Union Color

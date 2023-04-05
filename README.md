@@ -123,8 +123,8 @@ To be honest, I went a little overboard and const'd the values as well. I have s
 
 Mac OS and many other systems are little endian, but "The Network" and many protocols are not. A well written API will not rely on the endianness of the system, but not all APIs are well written. 
 
-For example, in my code I wrote a union that would let me enter #RRGGBBAA encode color information. It is NOT actually compliant with the OpenGL and PNG format RGBA32, because that data specification assumes the numbers are encoded 
-with RED at byte[0], not byte[4]. Little endian systems will load the UInt32  #FFCC9966 into memory as [66, 99, CC, FF]
+For example, in my code I wrote a union that would let me enter #RRGGBBAA to encode color information into a UINT32.  It is NOT actually compliant with the OpenGL and PNG format RGBA32, because that data specification assumes the numbers are encoded 
+with RED at byte[0], not byte[4]. Little endian systems will load the UInt32  #FFCC9966 into memory as [66, 99, CC, FF] instead.
 
 Little Endian systems should implement #AABBGGRR style numbers but that is the opposite of how I'm used to writing hex colors, so I did not for this code. 
 

@@ -21,9 +21,9 @@ The bulk of the repo's code was made by following along with the two WWDC videos
 - https://developer.apple.com/documentation/swift/opaquepointer
 
 
-## Using this Repo
+## Using the UnsafeWrapCSample repo
 
-This repo is not designed to import into production code as much as to use as a reference. If you want to quickly get a sense of what it can do also down load the companion project mentioned above that has Views for each of the major concepts. 
+This repo is not designed to import into production code as much as to use as a reference. To quickly get a sense of what it can do, download the companion project mentioned above. It has Views for each of the major concepts. 
 
 - First scan the `random.h` for the types of C function that the Swift examples bridge to. The header file is commented with the location of the Swift code that calls it. The C functions were written to test the Swift code, not to demonstrate best practices in C. For example, `rand()` is not a great source for random numbers, there is very little error checking, some fairly sloppy typing (`int` when should be `uint` or `size_t`, unnecessary `void*`), lots of pointers where you wouldn't necessarily use one, etc. 
 
@@ -38,6 +38,101 @@ This repo is not designed to import into production code as much as to use as a 
 - `PseudoUnion` makes no C calls at all, but is an attempt to reproduce the behavior of the C union `CColorRGBA` using just Swift.
 
 - `UnsafeBufferView is lifted straight from 25:52 of WWDC 2020 "Safely Manage Pointers in Swift." (link in references)
+
+
+## Lessons Learned
+
+Top take-a-ways from the exercise:
+
+### Use the closure syntax
+
+There is a great closure syntax for many of the APIS which means you don't have to manually allocate and deallocate pointers, and the closures can return what every you want from them. This example uses a special Array initializer which I thought was pretty cool in and of itself. It's a little trick because initializedCount absolutely needs to be set to tell Swift how big the array ended up being. 
+
+```Swift 
+    public func makeArrayOfRandomIntClosure(count:Int) -> [Int] {
+        //Count for this initializer is really MAX count possible, function may return an array with fewer items defined.
+        //both buffer and initializedCount are inout
+        let tmp = Array<CInt>(unsafeUninitializedCapacity: count) { buffer, initializedCount in
+            //C:-- void random_array_of_zero_to_one_hundred(int* array, const size_t n);
+            random_array_of_zero_to_one_hundred(buffer.baseAddress, count)
+            initializedCount = count // if initializedCount is not set, Swift assumes 0, and the array returned is empty.
+        }
+        return tmp.map { Int($0) }
+    }
+```
+
+### Use the .load function whenever you can.
+
+If you have bytes bound to one memory type and you need them to look like something else to you code, `.load(as:)` is your friend.
+```swift
+    func quadTupleToInt32(_ tuple:(UInt8,UInt8,UInt8,UInt8)) -> UInt32? {
+        withUnsafeBytes(of: tuple, { bytesPointer in
+            return bytesPointer.baseAddress?.load(as: UInt32.self)
+        })
+    }
+```
+There is now even a `.loadUnaligned(fromByteOffset:,as:)` that will come in super handy for parsing data protocols in which the data may not be (aligned)[https://developer.ibm.com/articles/pa-dalign/]. 
+
+```swift
+    public func processUnalignedData<T>(data:Data, as type:T.Type, offsetBy offset:Int = 0) -> T {
+        let result = data.withUnsafeBytes { buffer -> T in
+            return buffer.loadUnaligned(fromByteOffset: offset, as: T.self)
+        }
+        print(result)
+        return result
+    }
+```
+
+### Use const in C function definitions
+
+A `const` in the C function definition makes a difference to the Swift `Unsafe` pointer type. If a pointer is marked as `const`, then Swift only requires an `UnsafePointer`, and you can pass in variables defined with `let`. If it isn't, Swift will require you to make an `UnsafeMutablePointer` and will require a `var`.
+
+To be honest, I went a little overboard and const'd the values as well. I have since confirmed that swift does NOT need that to pass in let values after all. I left them in b/c working code works. Modern C compilers are probably smart enough to write code that doesn't copy-on pass but on change, but historically some compilers did not make a new copy of a variable for functions that promised to be safe in their declarations. I have to look into this more if I ever decide to try to compile Swift for something tiny. 
+
+[More about const and its usage (C++ discussion)](https://isocpp.org/wiki/faq/const-correctness#overview-const)
+
+#### Examples
+ 
+ `baseInt` and `cappingAt` don't need to have temporary vars made for them.
+
+```swift
+    public func addRandom(to baseInt:CInt, cappingAt:CInt = CInt.max) -> CInt {
+        withUnsafePointer(to: baseInt) { (min_ptr) -> CInt in
+            withUnsafePointer(to: cappingAt) { (max_ptr) -> CInt in
+                //C:-- int random_number_in_range(const int* min, const int* max);
+                return random_number_in_range(min_ptr, max_ptr);
+            }
+        }
+    }
+```
+
+`baseArray` does need a copy made since it is not passed in as an `inout` variable. Strictly speaking this is safer, but depending on your buffer size may not be the desired behavior. Note the super swank temporary implicit `UnsafeMutableBufferPointer` created. So so nice. 
+
+```swift
+   public func addRandomWithCap(_ baseArray:[UInt32], newValueCap:UInt32) -> [UInt32] {
+        var arrayCopy = baseArray
+        //C:-- void add_random_to_all_capped(unsigned int* array, const size_t n, unsigned int cap);
+        add_random_to_all_capped(&arrayCopy, arrayCopy.count, newValueCap)
+        return arrayCopy
+        
+    }
+```
+
+### Don't for get your endians
+
+Mac OS and many other systems are little endian, but "The Network" and many protocols are not. A well written API will not rely on the endianness of the system, but not all APIs are well written. 
+
+For example, in my code I wrote a union that would let me enter #RRGGBBAA encode color information. It is NOT actually compliant with the OpenGL and PNG format RGBA32, because that data specification assumes the numbers are encoded 
+with RED at byte[0], not byte[4]. Little endian systems will load the UInt32  #FFCC9966 into memory as [66, 99, CC, FF]
+
+Little Endian systems should implement #AABBGGRR style numbers but that is the opposite of how I'm used to writing hex colors, so I did not for this code. 
+
+To check your system try one of the following:
+
+- `lscpu | grep Endian` 
+- `echo -n I | od -to2 | awk 'FNR==1{ print substr($2,6,1)}'`  (return will be 1 for little endian, 0 for big)
+- `python3 -c "import sys;print(sys.byteorder)"`
+
 
 
 ## Swift Unsafe API names

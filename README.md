@@ -25,7 +25,7 @@ The bulk of the repo's code was made by following along with the two WWDC videos
 
 This repo is not designed to import into production code as much as to use as a reference. To quickly get a sense of what it can do, download the companion project mentioned above. It has Views for each of the major concepts. 
 
-- First scan the `random.h` for the types of C function that the Swift examples bridge to. The header file is commented with the location of the Swift code that calls it. The C functions were written to test the Swift code, not to demonstrate best practices in C. For example, `rand()` is not a great source for random numbers, there is very little error checking, some fairly sloppy typing (`int` when should be `uint` or `size_t`, unnecessary `void*`), lots of pointers where you wouldn't necessarily use one, etc. 
+- First scan the `random.h` for the types of C function that the Swift examples bridge to. The header file is commented with the location of the Swift code that calls it. The C functions were written to test the Swift code, not to demonstrate best practices in C. For example, `rand()` is not a great source for random numbers, there is very little error checking, some fairly sloppy typing (`int` when should be `uint` or `size_t`, unnecessary `void*`), lots of pointers where one wouldn't necessarily use one, etc. 
 
 - The bulk of the code is in `RandomProvider` which is divided into sections, each providing a different kind of random information from numbers, to arrays of numbers, to strings, to a C struct representing 32bit color information.
 
@@ -46,7 +46,7 @@ Top take-a-ways from the exercise:
 
 ### Use the closure syntax
 
-There is a great closure syntax for many of the APIS which means you don't have to manually allocate and deallocate pointers, and the closures can return what every you want from them. This example uses a special Array initializer which I thought was pretty cool in and of itself. It's a little trick because initializedCount absolutely needs to be set to tell Swift how big the array ended up being. 
+There is a great closure syntax for many of the APIS which means not needing to manually allocate and deallocate pointers. The closures can return any type wanted. This example uses a special Array initializer which I thought was pretty cool in and of itself. It's a little trick because initializedCount absolutely needs to be set to tell Swift how big the array ended up being. 
 
 ```Swift 
     public func makeArrayOfRandomIntClosure(count:Int) -> [Int] {
@@ -61,9 +61,10 @@ There is a great closure syntax for many of the APIS which means you don't have 
     }
 ```
 
-### Use the .load function whenever you can.
+### Use the .load function whenever possible.
 
-If you have bytes bound to one memory type and you need them to look like something else to you code, `.load(as:)` is your friend.
+If bytes bound to one memory type need to look like something else to the code, `.load(as:)` is your friend.
+
 ```swift
     func quadTupleToInt32(_ tuple:(UInt8,UInt8,UInt8,UInt8)) -> UInt32? {
         withUnsafeBytes(of: tuple, { bytesPointer in
@@ -85,7 +86,7 @@ There is now even a `.loadUnaligned(fromByteOffset:,as:)` that will come in supe
 
 ### Use const in C function definitions
 
-A `const` in the C function definition makes a difference to the Swift `Unsafe` pointer type. If a pointer is marked as `const`, then Swift only requires an `UnsafePointer`, and you can pass in variables defined with `let`. If it isn't, Swift will require you to make an `UnsafeMutablePointer` and will require a `var`.
+A `const` in the C function definition makes a difference to the Swift `Unsafe` pointer type. If a pointer is marked as `const`, then Swift only requires an `UnsafePointer`, which can be made from variables defined with `let`. If no const in the function parameter definition, Swift will require a `var` to create `UnsafeMutablePointer`.
 
 To be honest, I went a little overboard and const'd the values as well. I have since confirmed that swift does NOT need that to pass in let values after all. I left them in b/c working code works. Modern C compilers are probably smart enough to write code that doesn't copy-on pass but on change, but historically some compilers did not make a new copy of a variable for functions that promised to be safe in their declarations. I have to look into this more if I ever decide to try to compile Swift for something tiny. 
 
@@ -106,7 +107,7 @@ To be honest, I went a little overboard and const'd the values as well. I have s
     }
 ```
 
-`baseArray` does need a copy made since it is not passed in as an `inout` variable. Strictly speaking this is safer, but depending on your buffer size may not be the desired behavior. Note the super swank temporary implicit `UnsafeMutableBufferPointer` created. So so nice. 
+`baseArray` does need a copy made since it is not passed in as an `inout` variable. Strictly speaking this is safer, but depending on the buffer size may not be the desired behavior. Note the super swank temporary implicit `UnsafeMutableBufferPointer` created. So so nice. 
 
 ```swift
    public func addRandomWithCap(_ baseArray:[UInt32], newValueCap:UInt32) -> [UInt32] {
@@ -118,7 +119,7 @@ To be honest, I went a little overboard and const'd the values as well. I have s
     }
 ```
 
-### Don't for get your endians
+### Don't for get about byte direction
 
 Mac OS and many other systems are little endian, but "The Network" and many protocols are not. A well written API will not rely on the endianness of the system, but not all APIs are well written. 
 
@@ -127,7 +128,7 @@ with RED at byte[0], not byte[4]. Little endian systems will load the UInt32  #F
 
 Little Endian systems should implement #AABBGGRR style numbers but that is the opposite of how I'm used to writing hex colors, so I did not for this code. 
 
-To check your system try one of the following:
+To check a given system, try one of the following:
 
 - `lscpu | grep Endian` 
 - `echo -n I | od -to2 | awk 'FNR==1{ print substr($2,6,1)}'`  (return will be 1 for little endian, 0 for big)

@@ -10,6 +10,7 @@
 import Foundation
 
 
+
 public struct PseudoUnion {
     public var full: UInt32
     
@@ -172,4 +173,64 @@ public struct PseudoUnion {
         makeDouble(from: alpha)
     }
     
+}
+
+
+
+//Alternative:
+/// ` struct ContentView: View {
+/// `   @UnsafeUInt32 var test = 0xFF003322
+/// `   var body: some View {
+/// `       VStack {
+/// `           Text("\(_test[0])")
+/// `           Text("\(_test[1])")
+/// `           Text("\(_test[2])")
+/// `           Text("\(_test[3])")
+/// `       }
+/// `       .padding()
+/// `   }
+/// `}
+@propertyWrapper struct UnsafeUInt32: RandomAccessCollection {
+    var wrappedValue:UInt32
+    
+    public var startIndex: Int { 0 }
+    public var endIndex: Int { 3 }
+    
+    subscript(position: Int) -> UInt8 {
+        var tmp = wrappedValue
+        return withUnsafeMutablePointer(to: &tmp) { ptr in
+            let rawBufferPointer = UnsafeRawBufferPointer(start: ptr, count: 4)
+            return rawBufferPointer[position]
+        }
+    }
+}
+
+
+//This will throw a fatal error if set on an out of bounds index, compiler does not catch.
+struct UnsafeMutableUInt32: RandomAccessCollection {
+    
+    var storage:UInt32
+    
+    public var startIndex: Int { 0 }
+    public var endIndex: Int { 3 }
+    
+    subscript(position: Int) -> UInt8 {
+        get {
+            var tmp = storage
+            return withUnsafeMutablePointer(to: &tmp) { ptr in
+                let rawBufferPointer = UnsafeRawBufferPointer(start: ptr, count: 4)
+                return rawBufferPointer[position]
+            }
+        }
+        set {
+            precondition(self.indices.contains(position))
+            var tmp = storage
+            withUnsafeMutablePointer(to: &tmp) { ptr in
+                let rawBufferPointer = UnsafeMutableRawBufferPointer(start: ptr, count: 4)
+                rawBufferPointer[position] = newValue
+            }
+            storage = tmp
+            
+        }
+    }
 }

@@ -8,7 +8,7 @@ The package file has two targets, a target for the C and one for the Swift. The 
 
 For examples on how to use these functions in an actual application see the companion project [UnsafeExplorer](https://github.com/carlynorama/UnsafeExplorer). 
 
-This companion project never imports the C target, so it cannot call the C functions directly. It is worth noting that it can recognize (but not create) the more complex C types that are fully defined in the header even without the import. (See [RandomColorsView](https://github.com/carlynorama/UnsafeExplorer/blob/main/UnsafeExplorer/SubViews/RandomColorsView.swift), testColorFunctions(), where c_color is allowed to exist as a CColorRGBA, but a new one cannot be created there. )
+This companion project never imports the C target, so it cannot call the C functions directly. It is worth noting that it can recognize (but not create) the more complex C types that are fully defined in the header even without the import. (See [RandomColorsView](https://github.com/carlynorama/UnsafeExplorer/blob/main/UnsafeExplorer/SubViews/RandomColorsView.swift), `testColorFunctions()`, where `c_color` is allowed to exist as a `CColorRGBA`, but a new one cannot be created there. )
 
 ## References
 
@@ -19,6 +19,8 @@ The bulk of the repo's code was made by following along with the two WWDC videos
 - Safely manage pointers in Swift https://developer.apple.com/videos/play/wwdc2020/10167/
 - https://developer.apple.com/documentation/swift/using-imported-c-structs-and-unions-in-swift
 - https://developer.apple.com/documentation/swift/opaquepointer
+
+- see also: https://www.kodeco.com/7181017-unsafe-swift-using-pointers-and-interacting-with-c
 
 
 ## Using the UnsafeWrapCSample repo
@@ -46,7 +48,7 @@ Top take-a-ways from the exercise:
 
 ### Use the closure syntax
 
-There is a great closure syntax for many of the APIS which means not needing to manually allocate and deallocate pointers. The closures can return any type wanted. This example uses a special Array initializer which I thought was pretty cool in and of itself. It's a little trick because initializedCount absolutely needs to be set to tell Swift how big the array ended up being. 
+There is a great closure syntax for many of the Unsafe APIS, which means not needing to manually allocate and deallocate pointers. The closures can return any type wanted. This example uses a special Array initializer which I thought was pretty cool in and of itself. It's a little tricky because initializedCount absolutely needs to be set to tell Swift how big the array ended up being. 
 
 ```Swift 
     public func makeArrayOfRandomIntClosure(count:Int) -> [Int] {
@@ -72,7 +74,7 @@ If bytes bound to one memory type need to look like something else to the code, 
         })
     }
 ```
-There is now even a `.loadUnaligned(fromByteOffset:,as:)` that will come in super handy for parsing data protocols in which the data may not be (aligned)[https://developer.ibm.com/articles/pa-dalign/]. 
+The newish `.loadUnaligned(fromByteOffset:,as:)` option will come in super handy for parsing data protocols in which the data may not be aligned](https://developer.ibm.com/articles/pa-dalign/). 
 
 ```swift
     public func processUnalignedData<T>(data:Data, as type:T.Type, offsetBy offset:Int = 0) -> T {
@@ -146,7 +148,7 @@ To check a given system, try one of the following:
 - [`UnsafeMutableBufferPointer<Element>`](https://developer.apple.com/documentation/swift/unsafemutablepointer)
 
 ### Raw Pointers
-- [Unmanaged]
+- [Unmanaged](https://developer.apple.com/documentation/swift/unmanaged)
 
 - [`UnsafeRawPointer`](https://developer.apple.com/documentation/swift/unsaferawpointer)
 - [`UnsafeMutableRawPointer`](https://developer.apple.com/documentation/swift/unsafemutablerawpointer)
@@ -162,7 +164,7 @@ To check a given system, try one of the following:
 
 ### Misc other functions
 
-- [`String.withCString(_:)`](https://developer.apple.com/documentation/swift/string/withcstring(_:)
+- [`String.withCString(_:)`](https://developer.apple.com/documentation/swift/string/withcstring(_:))
 - [`String.withUTF8(_:)`](https://developer.apple.com/documentation/swift/string/utf8cstring)
 
 - [`Array.withUnsafeBytes(_:)`](https://developer.apple.com/documentation/swift/array/withunsafebytes(_:))

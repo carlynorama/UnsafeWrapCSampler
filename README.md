@@ -148,7 +148,6 @@ To check a given system, try one of the following:
 - [`UnsafeMutableBufferPointer<Element>`](https://developer.apple.com/documentation/swift/unsafemutablepointer)
 
 ### Raw Pointers
-- [Unmanaged](https://developer.apple.com/documentation/swift/unmanaged)
 
 - [`UnsafeRawPointer`](https://developer.apple.com/documentation/swift/unsaferawpointer)
 - [`UnsafeMutableRawPointer`](https://developer.apple.com/documentation/swift/unsafemutablerawpointer)
@@ -189,5 +188,6 @@ Since working with C anyway, pass the pointer into a `void*` and do what you nee
 - [withMemoryRebound(to:capacity:)](https://developer.apple.com/documentation/swift/unsafemutablerawpointer/withmemoryrebound(to:capacity:_:))
 
 ## TODO:
+- Not used in this repo, [Unmanaged](https://developer.apple.com/documentation/swift/unmanaged) tells swift that it does not need to manage reference counting. 
 - //init(bitPattern pointer: OpaquePointer?)
 - //init(bitPattern objectID: ObjectIdentifier)

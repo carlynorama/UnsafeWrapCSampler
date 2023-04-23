@@ -449,6 +449,16 @@ public struct RandomProvider {
         return  String(data: letter, encoding: .utf8) ?? "Not a letter.";
     }
     
+    
+    //when variable get saved as Strings they can fool you into thinking
+    //being passed into C is working.
+    //but halfway through your string it's all like "byeeeee!" or "\uhqh389\j884fjf HAHAHA"
+    // my_string.utf8CString returns a ContiguousArray<CChar>
+    //ContiguousArray<CChar> tells you what a Swift String is not.
+    // - not contiguous.
+    // - not chars.
+    
+    
     //Combines cPrintMessage(message:String) and getString() examples.
     public func scrambleMessage(message:String) -> String {
         print(message.count)

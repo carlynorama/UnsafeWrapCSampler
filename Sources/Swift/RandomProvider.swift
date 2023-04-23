@@ -431,10 +431,11 @@ public struct RandomProvider {
     //MARK: Strings
     
     //TODO: Fix string functions
-    //when variable get saved as Strings they can fool you into thinking
-    //being passed into C is working.
-    //but halfway through your string it's all like "byeeeee!" or "\uhqh389\j884fjf HAHAHA"
-    // my_string.utf8CString returns a ContiguousArray<CChar>
+    //when a variable is saved as `String` it can fool you into thinking
+    //being passed into C is working, but halfway through your string
+    //is all like "byeeeee!" or "\uhqh389\j884fjf HAHAHA"
+    
+    //`my_string.utf8CString` returns a ContiguousArray<CChar>
     //ContiguousArray<CChar> tells you what a Swift String is not.
     // - not contiguous.
     // - not chars.

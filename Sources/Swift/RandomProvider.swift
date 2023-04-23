@@ -430,6 +430,16 @@ public struct RandomProvider {
     
     //MARK: Strings
     
+    //TODO: Fix string functions
+    //when variable get saved as Strings they can fool you into thinking
+    //being passed into C is working.
+    //but halfway through your string it's all like "byeeeee!" or "\uhqh389\j884fjf HAHAHA"
+    // my_string.utf8CString returns a ContiguousArray<CChar>
+    //ContiguousArray<CChar> tells you what a Swift String is not.
+    // - not contiguous.
+    // - not chars.
+    
+    
     
     //Init buffer known to be bigger than what you'll get out.
     public func getAnswer() -> String {
@@ -448,16 +458,6 @@ public struct RandomProvider {
         let letter:Data = Data([UInt8(random_letter())])
         return  String(data: letter, encoding: .utf8) ?? "Not a letter.";
     }
-    
-    
-    //when variable get saved as Strings they can fool you into thinking
-    //being passed into C is working.
-    //but halfway through your string it's all like "byeeeee!" or "\uhqh389\j884fjf HAHAHA"
-    // my_string.utf8CString returns a ContiguousArray<CChar>
-    //ContiguousArray<CChar> tells you what a Swift String is not.
-    // - not contiguous.
-    // - not chars.
-    
     
     //Combines cPrintMessage(message:String) and getString() examples.
     public func scrambleMessage(message:String) -> String {
